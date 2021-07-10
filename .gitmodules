@@ -1,0 +1,3 @@
+[submodule "hand_pose_action"]
+	path = hand_pose_action
+	url = https://github.com/guiggh/hand_pose_action.git
