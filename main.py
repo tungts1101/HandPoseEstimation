@@ -3,7 +3,7 @@ import numpy as np
 import open3d
 
 # ===== read image =====
-depth_img = cv2.imread('hand_pose_action/Video_files/Subject_1/put_salt/1/depth/depth_0001.png', cv2.IMREAD_UNCHANGED)
+depth_img = cv2.imread('hand_pose_action/Video_files/Subject_1/put_salt/1/depth/depth_0061.png', cv2.IMREAD_UNCHANGED)
 
 # ===== crop all parts too far from camera =====
 depth = cv2.split(depth_img)[0]
@@ -43,5 +43,17 @@ numpy_horizontal = np.hstack((depth_checked_hand_obj, contour_checked_hand_obj))
 
 # roi = out[y:y+h,x:x+w]
 
-color_img = open3d.io.read_image('hand_pose_action/Video_files/Subject_1/put_salt/1/color/color_0001.jpeg')
-point_cloud = open3d.geometry.RGBDImage.create_from_color_and_depth(color_img, out)
+# ===== convert numpy array to open3d image
+image = open3d.geometry.Image(out.astype(np.uint16))
+width, height = np.asarray(image).shape
+intrinsic_mat = open3d.camera.PinholeCameraIntrinsic(width, height, 475.065948, 475.065857, 315.944855, 245.287079)
+extrinsic_mat = np.array([
+                    [0.999988496304, -0.00468848412856, 0.000982563360594, 25.7], 
+                    [0.00469115935266, 0.999985218048, -0.00273845880292, 1.22],
+                    [-0.000969709653873, 0.00274303671904, 0.99999576807, 3.902], 
+                    [0, 0, 0, 1]
+                ])
+pcd = open3d.geometry.PointCloud.create_from_depth_image(image, intrinsic_mat, extrinsic_mat)
+# flip the pointcloud
+pcd.transform([[1, 0, 0, 0], [0, -1, 0, 0], [0, 0, -1, 0], [0, 0, 0, 1]])
+open3d.visualization.draw_geometries([pcd])
