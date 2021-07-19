@@ -3,7 +3,7 @@ import numpy as np
 import open3d
 import os
 
-root = 'hand_pose_action/Video_files'
+root = '/media/data3/datasets/F-PHAB/Video_files'
 pcd_root = 'point_cloud_dataset'
 
 def generate_point_cloud_one_image(path, name):
@@ -77,6 +77,7 @@ def generate_point_cloud_one_image(path, name):
     ## uncomment to view the point cloud
     # open3d.visualization.draw_geometries([pcd])
 
+    print("write to {0}".format(pcd_filepath))
     open3d.io.write_point_cloud(pcd_filepath, pcd)
 
 def generate_point_cloud():
