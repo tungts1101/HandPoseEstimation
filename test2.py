@@ -42,12 +42,12 @@ with o3d.utility.VerbosityContextManager(o3d.utility.VerbosityLevel.Debug) as cm
     clustering = DBSCAN(eps=0.008,min_samples=10,algorithm='kd_tree').fit(pcd_points)
     labels = clustering.labels_
 
-max_label = labels.max()
-print(f"point cloud has {max_label + 1} clusters")
-colors = plt.get_cmap("tab20")(labels / (max_label if max_label > 0 else 1))
-colors[labels < 0] = 0
-pcd.colors = o3d.utility.Vector3dVector(colors[:, :3])
-o3d.visualization.draw_geometries([pcd])
+# max_label = labels.max()
+# print(f"point cloud has {max_label + 1} clusters")
+# colors = plt.get_cmap("tab20")(labels / (max_label if max_label > 0 else 1))
+# colors[labels < 0] = 0
+# pcd.colors = o3d.utility.Vector3dVector(colors[:, :3])
+# o3d.visualization.draw_geometries([pcd])
 
 counter = Counter(labels)
 cluster_distance = {}
@@ -65,11 +65,33 @@ for point_idx, point in enumerate(pcd.points):
 for label in cluster_distance:
     cluster_distance[label] /= counter[label]
 
-print(cluster_distance)
+# print(cluster_distance)
 
 hand_label = min(cluster_distance, key=cluster_distance.get)
 
 pcd.points = o3d.utility.Vector3dVector([point for (i, point) in enumerate(pcd_points) if labels[i] == hand_label])
 pcd_points = np.asarray(pcd.points)
 print(pcd_points.shape)
+# o3d.visualization.draw_geometries([pcd])
+
+# farthest point sampling
+def cal_dis(p0, points):
+    return ((p0 - points)**2).sum(axis=1)
+
+def farthest_point_sampling(pts, k):
+    if len(pts) < k:
+        return [i for i in range(pts)] + [rd.randint(len(pts)) for _ in range(k - len(pts))]
+
+    indices = np.zeros((k, ), dtype=np.uint32)
+    indices[0] = np.random.randint(len(pts))
+    min_distances = cal_dis(pts[indices[0]], pts)
+    for i in range(1, k):
+        indices[i] = np.argmax(min_distances)
+        min_distances = np.minimum(min_distances, cal_dis(pts[indices[i]], pts))
+    return indices
+
+indices = farthest_point_sampling(pcd_points, 512)
+
+pcd.points = o3d.utility.Vector3dVector([pcd_points[i] for i in indices])
+print(pcd.points)
 o3d.visualization.draw_geometries([pcd])
