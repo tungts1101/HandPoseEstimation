@@ -8,6 +8,7 @@ from sklearn.cluster import DBSCAN
 
 filepath = 'hand_pose_action/Video_files/Subject_1/use_calculator/1/depth/depth_0088.png'
 # filepath = 'hand_pose_action/Video_files/Subject_1/put_salt/1/depth/depth_0025.png'
+
 depth_img = cv2.imread(filepath, cv2.IMREAD_UNCHANGED)
 
 # ===== crop all parts too far from camera =====
@@ -22,19 +23,24 @@ depth[depth>550] = 0
 image = o3d.geometry.Image(depth.astype(np.uint16))
 width, height = np.asarray(image).shape
 intrinsic_mat = o3d.camera.PinholeCameraIntrinsic(width, height, 475.065948, 475.065857, 315.944855, 245.287079)
+# # intrinsic_mat = o3d.camera.PinholeCameraIntrinsic(width, height, 1395.749023, 1395.749268, 935.732544, 540.681030)
+
 extrinsic_mat = np.array([
                     [0.999988496304, -0.00468848412856, 0.000982563360594, 25.7], 
                     [0.00469115935266, 0.999985218048, -0.00273845880292, 1.22],
                     [-0.000969709653873, 0.00274303671904, 0.99999576807, 3.902], 
                     [0, 0, 0, 1]
                 ])
-pcd = o3d.geometry.PointCloud.create_from_depth_image(image, intrinsic_mat, extrinsic_mat)
+
+pcd = o3d.geometry.PointCloud.create_from_depth_image(image, intrinsic_mat)
+
 ## flip the pointcloud
 pcd.transform([[1, 0, 0, 0], [0, -1, 0, 0], [0, 0, -1, 0], [0, 0, 0, 1]])
 ## uncomment to view the point cloud
 # o3d.visualization.draw_geometries([pcd])
 
 pcd = pcd.voxel_down_sample(voxel_size=0.005)
+# o3d.visualization.draw_geometries([pcd])
 pcd_points = np.asarray(pcd.points)
 
 with o3d.utility.VerbosityContextManager(o3d.utility.VerbosityLevel.Debug) as cm:
@@ -59,19 +65,18 @@ for point_idx, point in enumerate(pcd.points):
     if not label in cluster_distance:
         cluster_distance[label] = 0
     
-    distance = (-point[0] - 25.77) ** 2 + (point[1] - 1.22) ** 2 + (point[2] - 3.902) ** 2
+    # distance = (point[0] - 25.77) ** 2 + (point[1] - 1.22) ** 2 + (point[2] - 3.902) ** 2
+    distance = np.sum(point**2)
     cluster_distance[label] += distance
 
 for label in cluster_distance:
     cluster_distance[label] /= counter[label]
 
-# print(cluster_distance)
-
 hand_label = min(cluster_distance, key=cluster_distance.get)
 
 pcd.points = o3d.utility.Vector3dVector([point for (i, point) in enumerate(pcd_points) if labels[i] == hand_label])
 pcd_points = np.asarray(pcd.points)
-print(pcd_points.shape)
+# print(pcd_points.shape)
 # o3d.visualization.draw_geometries([pcd])
 
 # farthest point sampling
@@ -80,7 +85,7 @@ def cal_dis(p0, points):
 
 def farthest_point_sampling(pts, k):
     if len(pts) < k:
-        return [i for i in range(pts)] + [rd.randint(len(pts)) for _ in range(k - len(pts))]
+        return [i for i in range(len(pts))] + [np.random.randint(len(pts)) for _ in range(k - len(pts))]
 
     indices = np.zeros((k, ), dtype=np.uint32)
     indices[0] = np.random.randint(len(pts))
@@ -90,8 +95,20 @@ def farthest_point_sampling(pts, k):
         min_distances = np.minimum(min_distances, cal_dis(pts[indices[i]], pts))
     return indices
 
-indices = farthest_point_sampling(pcd_points, 512)
-
+indices = farthest_point_sampling(pcd_points, 1024)
 pcd.points = o3d.utility.Vector3dVector([pcd_points[i] for i in indices])
-print(pcd.points)
+pcd.transform(np.linalg.inv(np.array([[1, 0, 0, 0], [0, -1, 0, 0], [0, 0, -1, 0], [0, 0, 0, 1]])))
+
+# o3d.visualization.draw_geometries([pcd])
+
+pcd.estimate_normals(search_param=o3d.geometry.KDTreeSearchParamHybrid(radius=0.01, max_nn=30))
+pcd.orient_normals_towards_camera_location(camera_location=np.array([0.0, 0.0, 0.0]))
+
+pcd.points = o3d.utility.Vector3dVector(np.asarray(pcd.points) * 1000.0)
+
+print(np.asarray(pcd.points)[:30, :])
+print("======")
+print(np.asarray(pcd.normals)[:30, :])
+
 o3d.visualization.draw_geometries([pcd])
+# o3d.io.write_point_cloud("test_pcd.ply", pcd)
