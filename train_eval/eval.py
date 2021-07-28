@@ -23,9 +23,9 @@ import torch.utils.data
 import torch.nn.functional as F
 from torch.autograd import Variable
 
-from dataset import HandPointDataset
-from dataset import subject_names
-from dataset import gesture_names
+from fpha_dataset import subject_names
+from fpha_dataset import gesture_names
+from fpha_dataset import FPHADataset
 from network import PointNet_Plus
 from utils import group_points
 
@@ -63,9 +63,9 @@ torch.manual_seed(opt.manualSeed)
 save_dir = os.path.join(opt.save_root_dir, subject_names[opt.test_index])
 
 # 1. Load data                                         
-test_data = HandPointDataset(root_path='../preprocess', opt=opt, train = False)
+test_data = FPHADataset(root_path='../point_cloud_dataset', opt=opt, train = False)
 test_dataloader = torch.utils.data.DataLoader(test_data, batch_size=opt.batchSize,
-                                          shuffle=False, num_workers=int(opt.workers), pin_memory=False)
+										  shuffle=False, num_workers=int(opt.workers), pin_memory=False)
                                           
 print('#Test data:', len(test_data))
 print (opt)
@@ -94,9 +94,9 @@ timer = time.time()
 for i, data in enumerate(tqdm(test_dataloader, 0)):
 	torch.cuda.synchronize()
 	# 3.1 load inputs and targets
-	points, volume_length, gt_pca, gt_xyz = data
+	points, gt_pca, gt_xyz = data
 	gt_pca = Variable(gt_pca, volatile=True).cuda()
-	points, volume_length, gt_xyz = points.cuda(), volume_length.cuda(), gt_xyz.cuda()
+	points, gt_xyz = points.cuda(), gt_xyz.cuda()
 	
 	# points: B * 1024 * 6
 	inputs_level1, inputs_level1_center = group_points(points, opt)
@@ -106,7 +106,7 @@ for i, data in enumerate(tqdm(test_dataloader, 0)):
 	estimation = netR(inputs_level1, inputs_level1_center)
 	loss = criterion(estimation, gt_pca)*opt.PCA_SZ
 	torch.cuda.synchronize()
-	test_mse = test_mse + loss.data[0]*len(points)
+	test_mse = test_mse + loss.data*len(points)
 
 	# 3.3 compute error in world cs        
 	outputs_xyz = test_data.PCA_mean.expand(estimation.data.size(0), test_data.PCA_mean.size(1))
@@ -115,7 +115,7 @@ for i, data in enumerate(tqdm(test_dataloader, 0)):
 	diff_sum = torch.sum(diff,2)
 	diff_sum_sqrt = torch.sqrt(diff_sum)
 	diff_mean = torch.mean(diff_sum_sqrt,1).view(-1,1)
-	diff_mean_wld = torch.mul(diff_mean,volume_length)
+	diff_mean_wld = torch.mul(diff_mean,len(points))
 	test_wld_err = test_wld_err + diff_mean_wld.sum()
 	
 # time taken
