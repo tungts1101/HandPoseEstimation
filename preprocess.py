@@ -7,7 +7,7 @@ from sklearn.cluster import DBSCAN
 from collections import Counter
 import sys
 
-root = 'hand_pose_action/Video_files'
+root = '/media/data3/datasets/F-PHAB/Video_files'
 pcd_root = 'point_cloud_dataset'
 cur_file_counter = 0
 num_point_sampling = 1024

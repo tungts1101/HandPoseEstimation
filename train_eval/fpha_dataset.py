@@ -9,8 +9,9 @@ import os
 import open3d as o3d
 import scipy.io as sio
 
-subject_names = ["Subject_1", "Subject_2"]
-gesture_names = ["put_salt", "use_calculator"]
+subject_names = ["Subject_1","Subject_2","Subject_3","Subject_4", "Subject_5", "Subject_6", "Subject_7"]
+gesture_names = ["charge_cell_phone","clean_glasses","close_juice_bottle","close_liquid_soap","close_milk","close_peanut_butter","drink_mug","flip_pages","flip_sponge", "give_card","give_coin","handshake","high_five","light_candle","open_juice_bottle","open_letter","open_liquid_soap","open_milk","open_peanut_butter","open_soda_can","open_wallet","pour_juice_bottle","pour_liquid_soap","pour_milk","pour_wine","prick","put_salt","put_sugar","put_tea_bag","read_letter","receive_coin", "scoop_spoon","scratch_sponge","sprinkle","squeeze_paper","squeeze_sponge","stir","take_letter_from_enveloppe","tear_paper","toast_wine","unfold_glasses","use_calculator","use_flash","wash_sponge","write"]
+training_subject = ["Subject_1", "Subject_3", "Subject_4"]
 
 # ===== load skeleton & object data =====
 reorder_idx = np.array([0, 1, 6, 7, 8, 2, 9, 10, 11, 3, 12, 13, 14, 4, 15, 16, 17, 5, 18, 19, 20])
@@ -40,7 +41,6 @@ pca_root = '../pca'
 class FPHADataset(Dataset):
     def __init__(self, root_path, opt, train=True):
         self.root_path              = root_path
-        self.test_index             = opt.test_index
         self.train                  = train
         self.PCA_SZ                 = opt.PCA_SZ
         self.SAMPLE_NUM             = opt.SAMPLE_NUM
@@ -60,16 +60,18 @@ class FPHADataset(Dataset):
 
         if self.train:
             for i_subject in range(len(subject_names)):
-                if i_subject != self.test_index:
+                subject = subject_names[i_subject]
+                if subject_names in training_subject:
                     for i_gesture in range(len(gesture_names)):
-                        subject = subject_names[i_subject]
                         gesture = gesture_names[i_gesture]
                         self.__load_data(subject, gesture)
         else:
-            for i_gesture in range(len(gesture_names)):
-                subject = subject_names[self.test_index]
-                gesture = gesture_names[i_gesture]
-                self.__load_data(subject, gesture)
+            for i_subject in range(len(subject_names)):
+                subject = subject_names[i_subject]
+                if subject not in training_subject:
+                    for i_gesture in range(len(gesture_names)):
+                        gesture = gesture_names[i_gesture]
+                        self.__load_data(subject, gesture)
 
         self.point_clouds = torch.from_numpy(self.point_clouds)
         # self.volume_length = torch.from_numpy(self.volume_length)
@@ -109,20 +111,22 @@ class FPHADataset(Dataset):
 
         if self.train:
             for i_subject in range(len(subject_names)):
-                if i_subject != self.test_index:
+                subject = subject_names[i_subject]
+                if subject in training_subject:
                     for i_gesture in range(len(gesture_names)):
-                        subject = subject_names[i_subject]
                         gesture = gesture_names[i_gesture]
                         for _, _, files in os.walk(os.path.join(self.root_path, subject, gesture)):
                             for _ in files:
                                 result += 1
         else:
-            for i_gesture in range(len(gesture_names)):
-                subject = subject_names[self.test_index]
-                gesture = gesture_names[i_gesture]
-                for _, _, files in os.walk(os.path.join(self.root_path, subject, gesture)):
-                    for _ in files:
-                        result += 1
+            for i_subject in range(len(subject_names)):
+                subject = subject_names[i_subject]
+                if subject not in training_subject:
+                    for i_gesture in range(len(gesture_names)):
+                        gesture = gesture_names[i_gesture]
+                        for _, _, files in os.walk(os.path.join(self.root_path, subject, gesture)):
+                            for _ in files:
+                                result += 1
 
         return result
 
