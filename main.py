@@ -1,59 +1,118 @@
+from tqdm import tqdm
+from multiprocessing import Pool
 import cv2
 import numpy as np
-import open3d
+import open3d as o3d
+import os
+from sklearn.cluster import DBSCAN
+from collections import Counter
+import glob
 
-# ===== read image =====
-depth_img = cv2.imread('hand_pose_action/Video_files/Subject_1/put_salt/1/depth/depth_0061.png', cv2.IMREAD_UNCHANGED)
+from tqdm.utils import IS_NIX, IS_WIN
 
-# ===== crop all parts too far from camera =====
-depth = cv2.split(depth_img)[0]
-depth[depth>550] = 0
+base_root = 'hand_pose_action\\Video_files' if IS_WIN else 'hand_pose_action/Video_files'
+subjects = ['Subject_1', 'Subject_2']
+pcd_root = 'point_cloud_dataset'
 
-depth_checked_hand_obj = depth / 256.0
-# cv2.imshow('Depth checked', depth_checked_hand_obj)
-# cv2.waitKey(0)
+num_point_sampling = 1024
+depth_threshold = 550
 
-# ===== find the largest contour =====
-depth_u8 = depth.astype('uint8')
-threshold_value = int(np.max(depth_u8) * 0.1)
-_, threshold = cv2.threshold(depth_u8, threshold_value, 255, cv2.THRESH_BINARY)
-kernel = np.ones((1,1),np.uint8)
-dilate = cv2.morphologyEx(threshold, cv2.MORPH_CLOSE, kernel, 3)
+def generate_point_cloud(filepath):
+    pcd_filepath = os.path.join(pcd_root, filepath[len(base_root)+1:].split('.')[-2] + '.ply')
 
-contours, _ = cv2.findContours(dilate, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
-c = max(contours, key = cv2.contourArea)
-x,y,w,h = cv2.boundingRect(c)
+    if not os.path.exists(pcd_filepath):
+        open(pcd_filepath, 'w').close()
+    
+    # ===== read image =====
+    depth_img = cv2.imread(filepath, cv2.IMREAD_UNCHANGED)
 
-# ===== show cropped hand and obj =====
-mask = np.zeros(depth_img.shape[0:2], dtype=np.uint8)
-cv2.drawContours(mask, [c], -1, color=(255, 255, 255), thickness=cv2.FILLED) # Draw filled contour in mask
-# cv2.imshow('Mask', mask)
-# cv2.waitKey(0)
+    # ===== crop all parts too far from camera =====
+    depth = cv2.split(depth_img)[0]
+    depth[depth>depth_threshold] = 0
 
-out = np.zeros_like(depth_img)
-out[mask == 255] = depth_img[mask == 255]
+    # ===== convert numpy array to open3d image =====
+    image = o3d.geometry.Image(depth.astype(np.uint16))
+    width, height = np.asarray(image).shape
+    intrinsic_mat = o3d.camera.PinholeCameraIntrinsic(width, height, 475.065948, 475.065857, 315.944855, 245.287079)
+    pcd = o3d.geometry.PointCloud.create_from_depth_image(image, intrinsic_mat, depth_scale=1000.0)
+    ## flip the pointcloud
+    pcd.transform([[1, 0, 0, 0], [0, -1, 0, 0], [0, 0, -1, 0], [0, 0, 0, 1]])
 
-contour_checked_hand_obj = out / 256.0
-# cv2.imshow('Cropped Hand and Obj', contour_checked_hand_obj)
-# cv2.waitKey(0)
+    # ===== downsample by voxel =====
+    pcd = pcd.voxel_down_sample(voxel_size=0.005)
+    pcd_points = np.asarray(pcd.points)
+    if len(pcd_points) == 0:
+        with open("warning_file.txt", "a") as warning_file:
+            warning_file.write(pcd_filepath)
+            return
 
-numpy_horizontal = np.hstack((depth_checked_hand_obj, contour_checked_hand_obj))
-# cv2.imshow('Cropped Hand Object', numpy_horizontal)
-# cv2.waitKey(0)
+    # ===== clustering point cloud =====
+    clustering = DBSCAN(eps=0.008,min_samples=10,algorithm='kd_tree').fit(pcd_points)
+    labels = clustering.labels_
 
-# roi = out[y:y+h,x:x+w]
+    if len(labels) == 0:
+        return
 
-# ===== convert numpy array to open3d image
-image = open3d.geometry.Image(out.astype(np.uint16))
-width, height = np.asarray(image).shape
-intrinsic_mat = open3d.camera.PinholeCameraIntrinsic(width, height, 475.065948, 475.065857, 315.944855, 245.287079)
-extrinsic_mat = np.array([
-                    [0.999988496304, -0.00468848412856, 0.000982563360594, 25.7], 
-                    [0.00469115935266, 0.999985218048, -0.00273845880292, 1.22],
-                    [-0.000969709653873, 0.00274303671904, 0.99999576807, 3.902], 
-                    [0, 0, 0, 1]
-                ])
-pcd = open3d.geometry.PointCloud.create_from_depth_image(image, intrinsic_mat, extrinsic_mat)
-# flip the pointcloud
-pcd.transform([[1, 0, 0, 0], [0, -1, 0, 0], [0, 0, -1, 0], [0, 0, 0, 1]])
-open3d.visualization.draw_geometries([pcd])
+    counter = Counter(labels)
+    cluster_distance = {}
+
+    for point_idx, point in enumerate(pcd.points):
+        label = labels[point_idx]
+        if counter[label] < 100: continue
+        
+        if not label in cluster_distance:
+            cluster_distance[label] = 0
+        
+        distance = np.sum(point**2)
+        cluster_distance[label] += distance
+
+    for label in cluster_distance:
+        cluster_distance[label] /= counter[label]
+
+    hand_label = min(cluster_distance, key=cluster_distance.get)
+    pcd_points = np.array([point for (i, point) in enumerate(pcd_points) if labels[i] == hand_label])
+
+    # ===== downsample with farthest point sampling =====
+    def cal_dis(p0, points):
+        return ((p0 - points)**2).sum(axis=1)
+
+    def farthest_point_sampling(pts, k):
+        if len(pts) < k:
+            return [i for i in range(len(pts))] + [np.random.randint(len(pts)) for _ in range(k - len(pts))]
+
+        indices = np.zeros((k, ), dtype=np.uint32)
+        indices[0] = np.random.randint(len(pts))
+        min_distances = cal_dis(pts[indices[0]], pts)
+        for i in range(1, k):
+            indices[i] = np.argmax(min_distances)
+            min_distances = np.minimum(min_distances, cal_dis(pts[indices[i]], pts))
+        return indices
+
+    indices = farthest_point_sampling(pcd_points, num_point_sampling)
+    pcd.points = o3d.utility.Vector3dVector([pcd_points[idx] for idx in indices])
+    pcd.transform(np.linalg.inv(np.array([[1, 0, 0, 0], [0, -1, 0, 0], [0, 0, -1, 0], [0, 0, 0, 1]])))
+
+    # estimate and orient normal to camera location
+    pcd.estimate_normals(search_param=o3d.geometry.KDTreeSearchParamHybrid(radius=0.01, max_nn=30))
+    pcd.orient_normals_towards_camera_location(camera_location=np.array([0.0, 0.0, 0.0]))
+
+    # pcd.points = o3d.utility.Vector3dVector(np.asarray(pcd.points) * 1000.0) # multiply with scale to get real world position
+
+    o3d.io.write_point_cloud(pcd_filepath, pcd)
+
+def worker(subject):
+    path = os.path.join(base_root, subject) + '\\**\\*.png' if IS_WIN else os.path.join(base_root, subject) + '/**/*.png'
+    files = glob.glob(path, recursive=True)
+
+    subfolder = os.path.join(pcd_root, subject)
+    if not os.path.exists(subfolder):
+        os.makedirs(subfolder)
+
+    for filepath in tqdm(files, position=subjects.index(subject)):
+        generate_point_cloud(filepath)
+
+if __name__ == '__main__':
+    with Pool(4) as p:
+        p.map(worker, subjects)
+        p.close()
+        p.join()
