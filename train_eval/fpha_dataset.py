@@ -24,7 +24,7 @@ cam_intr = np.array([[1395.749023, 0, 935.732544],
                      [0, 1395.749268, 540.681030],
                      [0, 0, 1]])
 
-root = '../hand_pose_action'
+root = '/media/data3/datasets/F-PHAB'
 skeleton_root = os.path.join(root, 'Hand_pose_annotation_v1')
 def get_skeleton(sample, skel_root):
     skeleton_path = os.path.join(skel_root, sample['subject'],
@@ -137,6 +137,7 @@ class FPHADataset(Dataset):
         for seq_idx in os.listdir(data_dir):
             for path, _, files in os.walk(os.path.join(data_dir, seq_idx)):
                 for name in files:
+                    print(os.path.join(path, name))
                     pcd = o3d.io.read_point_cloud(os.path.join(path, name))
                     self.point_clouds[self.cur_index,:,:] = np.concatenate((np.asarray(pcd.points).astype(np.float32),np.asarray(pcd.normals).astype(np.float32)), axis=1)
 

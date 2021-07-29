@@ -7,7 +7,8 @@ from sklearn.cluster import DBSCAN
 from collections import Counter
 import sys
 
-root = '/media/data3/datasets/F-PHAB/Video_files'
+base_root = '/media/data3/datasets/F-PHAB/Video_files'
+root = '/media/data3/datasets/F-PHAB/Video_files/Subject_2'
 pcd_root = 'point_cloud_dataset'
 cur_file_counter = 0
 num_point_sampling = 1024
@@ -16,7 +17,7 @@ depth_threshold = 550
 def generate_point_cloud_one_image(path, name):
     global cur_file_counter
 
-    subject_path = path[len(root)+1:]
+    subject_path = path[len(base_root)+1:]
     subject_path = subject_path.replace('\\', '/')  # for compatibility between windows and linux
 
     if subject_path.split('/')[-1] != 'depth': return   # consider only depth image
@@ -50,11 +51,14 @@ def generate_point_cloud_one_image(path, name):
     # ===== downsample by voxel =====
     pcd = pcd.voxel_down_sample(voxel_size=0.005)
     pcd_points = np.asarray(pcd.points)
+    if len(pcd_points) == 0:
+        with open("checked_file.txt", "a") as checked_file:
+            checked_file.write(pcd_file_path)
+            return
 
     # ===== clustering point cloud =====
     clustering = DBSCAN(eps=0.008,min_samples=10,algorithm='kd_tree').fit(pcd_points)
     labels = clustering.labels_
-
     counter = Counter(labels)
     cluster_distance = {}
 
@@ -70,6 +74,9 @@ def generate_point_cloud_one_image(path, name):
 
     for label in cluster_distance:
         cluster_distance[label] /= counter[label]
+    
+    if len(cluster_distance) == 0:
+        return
 
     hand_label = min(cluster_distance, key=cluster_distance.get)
     pcd_points = np.array([point for (i, point) in enumerate(pcd_points) if labels[i] == hand_label])
