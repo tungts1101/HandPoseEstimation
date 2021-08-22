@@ -13,6 +13,7 @@ def get_skeleton(sample, skel_root):
                                  'skeleton.txt')
     # print('Loading skeleton from {}'.format(skeleton_path))
     skeleton_vals = np.loadtxt(skeleton_path)
+    if len(skeleton_vals) == 0: return np.array([])
     skeleton = skeleton_vals[:, 1:].reshape(skeleton_vals.shape[0], 21, -1)
     return skeleton
 
@@ -50,6 +51,7 @@ if __name__ == '__main__':
                 "seq_idx": seq_idx
             }
             skeleton = get_skeleton(sample, skeleton_root)
+            if len(skeleton) == 0: continue
 
             for _, _, files in os.walk(os.path.join(path, dir)):
                 for name in files:
