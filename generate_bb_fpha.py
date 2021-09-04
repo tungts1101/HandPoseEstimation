@@ -3,6 +3,7 @@ import numpy as np
 import shutil
 import cv2
 import argparse
+import random
 
 subject_names = ["Subject_1", "Subject_3", "Subject_4"]
 action_names = ["put_salt"]
@@ -13,6 +14,7 @@ def get_skeleton(sample, skel_root):
                                  'skeleton.txt')
     # print('Loading skeleton from {}'.format(skeleton_path))
     skeleton_vals = np.loadtxt(skeleton_path)
+    if len(skeleton_vals) == 0: return np.array([])
     skeleton = skeleton_vals[:, 1:].reshape(skeleton_vals.shape[0], 21, -1)
     return skeleton
 
@@ -20,6 +22,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--root', required=True, help="Path to dataset install")
     parser.add_argument('--save_dir', required=True, help="Path to save images and labels")
+    parser.add_argument('--total', required=True, type=int, help="Total files to generate")
 
     args = parser.parse_args()
     img_root = os.path.join(args.root, "Video_files")
@@ -42,6 +45,14 @@ if __name__ == '__main__':
             if dir != "color": continue
 
             subject, action_name, seq_idx = path[len(args.root)+1:].split('\\')[1:4]
+    count = 0
+    for path, subdirs, _ in os.walk(img_root):
+        for dir in subdirs:
+            if dir != "color": continue
+            path = path.replace('\\', '/')
+            subject, action_name, seq_idx = path[len(args.root)+1:].split('/')[1:4]
+            if int(seq_idx) != 1: continue
+
             if subject not in subject_names: continue
             if action_name not in action_names: continue # comment this line to process in all actions
             sample = {
@@ -50,7 +61,7 @@ if __name__ == '__main__':
                 "seq_idx": seq_idx
             }
             skeleton = get_skeleton(sample, skeleton_root)
-
+            if len(skeleton) == 0: continue
             for _, _, files in os.walk(os.path.join(path, dir)):
                 for name in files:
                     filename, fileextension = os.path.splitext(name)
@@ -114,3 +125,9 @@ if __name__ == '__main__':
                     with open(save_label_path, "w") as f:
                         f.write('0 {} {} {} {}'.format(x_center_norm, y_center_norm, x_width_norm, y_width_norm))
                         f.close()
+                        f.close()
+
+                    count += 1
+                    if count >= args.total:
+                        print("Generating done")
+                        exit()
