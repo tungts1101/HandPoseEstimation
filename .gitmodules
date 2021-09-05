@@ -3,4 +3,7 @@
 	url = https://github.com/guiggh/hand_pose_action.git
 [submodule "src/Pointnet_Pointnet2_pytorch"]
 	path = src/Pointnet_Pointnet2_pytorch
-	url = git@github.com:tungts1101/Pointnet_Pointnet2_pytorch.git
+	url = https://github.com/tungts1101/Pointnet_Pointnet2_pytorch.git
+[submodule "HandDetection/yolov5"]
+	path = HandDetection/yolov5
+	url = https://github.com/tungts1101/yolov5.git
