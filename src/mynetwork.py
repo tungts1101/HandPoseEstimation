@@ -20,8 +20,6 @@ class NetworkObj(nn.Module):
         self.bn2 = nn.BatchNorm1d(256)
         self.drop2 = nn.Dropout(0.4)
         self.fc3 = nn.Linear(256, 42)
-
-        self.pool1 = nn.MaxPool2d((1,64))
     
     def forward(self, xyz):
         B, _, _ = xyz.shape
@@ -29,11 +27,6 @@ class NetworkObj(nn.Module):
         l0_xyz = xyz[:, :, :3]
         l0_points = xyz[:, :, 3:]
         l1_xyz, l1_points = self.sa1(l0_xyz.permute(0, 2, 1), l0_points.permute(0, 2, 1))
-        
-        # print(l1_points.shape)
-        # l1_poinst = self.pool1(l1_points.permute(0, 2, 1))
-        # print(l1_points.shape)
-
         l2_xyz, l2_points = self.sa2(l1_xyz, l1_points)
         l3_xyz, l3_points = self.sa3(l2_xyz, l2_points)
         out = l3_points.view(B, 1024)
