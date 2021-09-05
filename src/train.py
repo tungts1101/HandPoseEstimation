@@ -37,7 +37,7 @@ logging.basicConfig(filename=os.path.join(save_dir, 'log.txt'), filemode='w',
 logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))
 logging.info("================================================================================")
 
-device = torch.device('cuda:0') if (torch.cuda.is_available() and args.device == 'cuda') else 'cpu'
+device = torch.device('cuda:1') if (torch.cuda.is_available() and args.device == 'cuda') else 'cpu'
 logging.info("Device: {}".format(device))
 
 ### set seed
@@ -64,6 +64,7 @@ scheduler = lr_scheduler.StepLR(optimizer, step_size=50, gamma=0.1)
 
 for epoch in range(args.epoch):
     ## training
+    best_err = float("inf")
     timer = time.time()
     train_mse = 0.0
     train_mse_wld = 0.0
@@ -75,11 +76,11 @@ for epoch in range(args.epoch):
         optimizer.zero_grad()
         estimation = network(points)
 
-        loss = criterion(estimation, gt_pca) * 42
+        loss = criterion(estimation, gt_pca)
         
-        ## compute gradient
-        # loss.backward()
-        # optimizer.step()
+        # compute gradient
+        loss.backward()
+        optimizer.step()
 
         ## update error
         train_mse = train_mse + loss.item()*len(points)
@@ -100,7 +101,7 @@ for epoch in range(args.epoch):
     
     logging.info("Time training: {} s".format(time.time() - timer))
     train_mse = train_mse / len(train_dataset)
-    logging.info("Train error 1 sample: {} mm".format(train_mse))
+    logging.info("MSE 1 sample: {} cm".format(train_mse))
     train_mse_wld = train_mse_wld / len(train_dataset)
     logging.info("Train error 1 sample in world space: {} cm".format(train_mse_wld))
 
@@ -117,7 +118,7 @@ for epoch in range(args.epoch):
 
         ## compute output
         estimation = network(points)
-        loss = criterion(estimation, gt_pca) * 42
+        loss = criterion(estimation, gt_pca)
 
         ## update error
         test_mse = test_mse + loss.item()*len(points)
@@ -137,9 +138,15 @@ for epoch in range(args.epoch):
     timer = (time.time() - timer) / len(test_dataset)
     logging.info("Time test 1 sample: {} ms".format(timer * 1000))
     test_mse = test_mse / len(test_dataset)
-    logging.info("Test error 1 sample: {} mm".format(test_mse))
+    logging.info("Test MSE 1 sample: {} cm".format(test_mse))
     test_mse_wld = test_mse_wld / len(test_dataset)
     logging.info("Test error 1 sample in world space: {} cm".format(test_mse_wld))
 
+    if best_err > test_mse_wld:
+        best_err = test_mse_wld
+        logging.info("Save best")
+        torch.save(network.state_dict(), os.path.join(save_dir, "network_best.pth".format(epoch)))
+        torch.save(optimizer.state_dict(), os.path.join(save_dir, "optimizer_best.pth".format(epoch)))
+    
     logging.info("Epoch: {}, train error: {} cm, test error: {} cm".format(epoch, train_mse_wld, test_mse_wld))
     logging.info("================================================================================\n")
