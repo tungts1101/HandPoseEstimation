@@ -3,4 +3,13 @@ hand_pose_action/*
 Hand-Pointnet/*
 Hand_pointnet312/*
 HOPE/*
-Pointnet_Pointnet2_pytorch/*
+Pointnet_Pointnet2_pytorch/*.venv/
+.vscode/
+HOPE/
+Hand-Pointnet/
+Hand-Pointnet312.zip
+Hand-Pointnet312/
+__pycache__/
+test_pcd.ply
+train_eval/*
+src/exp/*
