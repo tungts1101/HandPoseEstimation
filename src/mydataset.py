@@ -3,6 +3,7 @@ import torch.utils.data
 import numpy as np
 import glob as glob
 import torch
+import sys
 
 subject_names_full = ["Subject_1", "Subject_2", "Subject_3", "Subject_4", "Subject_5", "Subject_6"]
 gesture_names_full = ['charge_cell_phone','clean_glasses','close_juice_bottle','close_liquid_soap','close_milk','close_peanut_butter','drink_mug','flip_pages','flip_sponge', 'give_card',
@@ -110,10 +111,16 @@ class DatasetObj(torch.utils.data.Dataset):
             for i_subject in self.subject_names:
                 if i_subject in self.test_subjects: continue
                 for i_gesture in self.gesture_names:
-                    total += len(glob.glob(os.path.join(self.root_path, 'Video_files', i_subject, i_gesture, '**\*.jpeg'), recursive=True))
+                    if sys.platform.startswith('win32'):
+                        total += len(glob.glob(os.path.join(self.root_path, 'Video_files', i_subject, i_gesture, '**\*.jpeg'), recursive=True))
+                    else:
+                        total += len(glob.glob(os.path.join(self.root_path, 'Video_files', i_subject, i_gesture, '**/*.jpeg'), recursive=True))
         else:
             for i_subject in self.test_subjects:
                 for i_gesture in self.gesture_names:
-                    total += len(glob.glob(os.path.join(self.root_path, 'Video_files', i_subject, i_gesture, '**\*.jpeg'), recursive=True))
+                    if sys.platform.startswith('win32'):
+                        total += len(glob.glob(os.path.join(self.root_path, 'Video_files', i_subject, i_gesture, '**\*.jpeg'), recursive=True))
+                    else:
+                        total += len(glob.glob(os.path.join(self.root_path, 'Video_files', i_subject, i_gesture, '**/*.jpeg'), recursive=True))
         
         return total

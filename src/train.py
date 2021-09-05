@@ -37,7 +37,7 @@ logging.basicConfig(filename=os.path.join(save_dir, 'log.txt'), filemode='w',
 logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))
 logging.info("================================================================================")
 
-device = torch.device('cuda:1') if (torch.cuda.is_available() and args.device == 'cuda') else 'cpu'
+device = torch.device('cuda:0') if (torch.cuda.is_available() and args.device == 'cuda') else 'cpu'
 logging.info("Device: {}".format(device))
 
 ### set seed
