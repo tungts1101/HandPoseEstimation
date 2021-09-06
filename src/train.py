@@ -8,7 +8,9 @@ from tqdm import tqdm
 import sys
 import time
 import torch.utils.data
+import utils
 
+from hand_pointnet import PointNet_Plus
 from mydataset import DatasetObj
 from mynetwork import NetworkObj
 import random
@@ -20,7 +22,10 @@ parser.add_argument('--pca_size', type=int, default=42)
 parser.add_argument('--batch_size', type=int, default=64)
 parser.add_argument('--seed', type=int, default=11)
 parser.add_argument('--save_dir', type=str, default='train', help="Folder to save pt file")
+parser.add_argument('--model', type=int, default=1)
 
+parser.add_argument('--ball_radius', type=float, default=0.015, help='square of radius for ball query in level 1')
+parser.add_argument('--ball_radius2', type=float, default=0.04, help='square of radius for ball query in level 2')
 parser.add_argument('--lr', type=float, default=0.001)
 parser.add_argument('--epoch', type=int, default=50)
 
@@ -55,7 +60,12 @@ train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=args.ba
 logging.info("Train data: {}".format(len(train_dataset)))
 
 ### load model
-network = NetworkObj()
+network = None
+if args.model == 1:
+    network = NetworkObj()
+elif args.model == 2:
+    network = PointNet_Plus(args.ball_radius2)
+
 network.to(device)
 logging.info(network)
 
@@ -63,9 +73,9 @@ criterion = torch.nn.MSELoss(size_average=True).to(device)
 optimizer = torch.optim.Adam(network.parameters(), lr=args.lr, betas = (0.5, 0.999), eps=1e-06)
 scheduler = lr_scheduler.StepLR(optimizer, step_size=50, gamma=0.1)
 
+best_err = float("inf")
 for epoch in range(args.epoch):
     ## training
-    best_err = float("inf")
     timer = time.time()
     train_mse = 0.0
     train_mse_wld = 0.0
@@ -75,7 +85,12 @@ for epoch in range(args.epoch):
 
         ## compute output
         optimizer.zero_grad()
-        estimation = network(points)
+        estimation = None
+        if isinstance(network, NetworkObj):
+            estimation = network(points)
+        elif isinstance(network, PointNet_Plus):
+            inputs_level1, inputs_level1_center = utils.group_points(points, args.ball_radius)
+            estimation = network(inputs_level1, inputs_level1_center)
 
         loss = criterion(estimation, gt_pca)
         
@@ -112,7 +127,7 @@ for epoch in range(args.epoch):
 
     if best_err > train_mse_wld:
         best_err = train_mse_wld
-        logging.info("Save best")
+        logging.info("Save best with error: {}".format(best_err))
         torch.save(network.state_dict(), os.path.join(save_dir, "network_best.pth".format(epoch)))
         torch.save(optimizer.state_dict(), os.path.join(save_dir, "optimizer_best.pth".format(epoch)))
 

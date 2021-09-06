@@ -11,7 +11,6 @@ def get_skeleton(sample, skel_root):
     skeleton = skeleton_vals[:, 1:].reshape(skeleton_vals.shape[0], 21, 3)
     return skeleton
 
-# Display utilities
 def visualize_joints_2d(image, gt_joints, es_joints):
     """Draw 2d skeleton on matplotlib axis"""
     links = [(0, 1, 2, 3, 4), (0, 5, 6, 7, 8), (0, 9, 10, 11, 12),
@@ -77,9 +76,8 @@ def visualize(root_path, subject, action, seq, valid_idx, estimated_xyz):
     i_image = 0
     i_valid = 0
     folder = os.path.join(root_path, 'Video_files', subject, action, seq, 'color')
-    for image_file in os.listdir(folder):
+    for i_image, image_file in enumerate(os.listdir(folder)):
         if not valid_idx[i_image]:
-            i_image += 1
             continue
         
         gt_skel = gt_skels[i_valid]
@@ -91,8 +89,7 @@ def visualize(root_path, subject, action, seq, valid_idx, estimated_xyz):
         es_skel_proj = get_skel(es_skel)
         visualize_joints_2d(img, gt_skel_proj, es_skel_proj)
 
-        # cv2.imshow('img', img)
-        # cv2.waitKey(0)
+        cv2.imshow('img', img)
+        cv2.waitKey(0)
 
-        i_image += 1
         i_valid += 1

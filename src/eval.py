@@ -12,6 +12,9 @@ import numpy as np
 import glob
 
 import util
+import utils
+
+from hand_pointnet import PointNet_Plus
 from mydataset import DatasetObj
 from mynetwork import NetworkObj
 import random
@@ -24,12 +27,15 @@ parser.add_argument('--batch_size', type=int, default=64)
 parser.add_argument('--seed', type=int, default=11)
 parser.add_argument('--weight', type=str, required=True, help="Weight folder")
 parser.add_argument('--save_dir', type=str, default='eval', help="Folder to save ground truth result")
+parser.add_argument('--model', type=int, default=1)
 
 parser.add_argument('--visualize', type=bool, default=False)
 parser.add_argument('--subject', type=str, default='')
 parser.add_argument('--action', type=str, default='')
 parser.add_argument('--seq', type=str, default='')
 
+parser.add_argument('--ball_radius', type=float, default=0.015, help='square of radius for ball query in level 1')
+parser.add_argument('--ball_radius2', type=float, default=0.04, help='square of radius for ball query in level 2')
 parser.add_argument('--lr', type=float, default=0.001)
 
 parser.add_argument('--device', type=str, default='cpu')
@@ -63,7 +69,13 @@ test_dataloader = torch.utils.data.DataLoader(test_dataset, batch_size=args.batc
 logging.info("Test data: {}".format(len(test_dataset)))
 
 ### load model
-network = NetworkObj()
+### load model
+network = None
+if args.model == 1:
+    network = NetworkObj()
+elif args.model == 2:
+    network = PointNet_Plus(args.ball_radius2)
+
 network.load_state_dict(torch.load(os.path.join(args.weight, "network_best.pth")))
 network.to(device)
 # logging.info(network)
@@ -84,7 +96,12 @@ with torch.no_grad():
         points, gt_pca, gt_xyz, volume_rotate, bound_obb = data
 
         ## compute output
-        estimation = network(points)
+        estimation = None
+        if isinstance(network, NetworkObj):
+            estimation = network(points)
+        elif isinstance(network, PointNet_Plus):
+            inputs_level1, inputs_level1_center = utils.group_points(points, args.ball_radius)
+            estimation = network(inputs_level1, inputs_level1_center)
         loss = criterion(estimation, gt_pca)
 
         ## update error
