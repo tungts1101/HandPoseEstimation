@@ -13,3 +13,5 @@ __pycache__/
 test_pcd.ply
 train_eval/*
 src/exp/*
+src/eval/*
+src/train/*

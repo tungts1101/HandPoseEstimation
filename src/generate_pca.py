@@ -22,9 +22,9 @@ for subject in subject_names_full:
             else:
                 jnt_xyz = np.vstack((jnt_xyz, gt_xyz))      
                 
-pca = PCA()
+pca = PCA(n_components=42)
 jnt_xyz = jnt_xyz.reshape(-1, 21 * 3)
-pca_mean = np.mean(jnt_xyz)
+pca_mean = np.mean(jnt_xyz, axis=0)
 pca.fit(jnt_xyz)
 
 if not os.path.exists(save_dir):

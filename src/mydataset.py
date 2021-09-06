@@ -1,4 +1,5 @@
 import os
+from re import sub
 import torch.utils.data
 import numpy as np
 import glob as glob
@@ -18,7 +19,7 @@ test_subjects_small = ["Subject_2"]
 
 
 class DatasetObj(torch.utils.data.Dataset):
-    def __init__(self, root_path, is_train=True, is_full=True, device='cpu'):
+    def __init__(self, root_path, is_train=True, is_full=True, device='cpu',subject='',action='',seq=''):
         self.root_path = root_path
         self.is_train = is_train
 
@@ -33,12 +34,17 @@ class DatasetObj(torch.utils.data.Dataset):
             self.subject_names = subject_names_small
             self.gesture_names = gesture_names_small
             self.test_subjects = test_subjects_small
+
+        if not self.is_train:
+            self.subject_names = [subject] if subject != '' else self.subject_names
+            self.gesture_names = [action] if action != '' else self.gesture_names
+            self.seq = None if seq == '' else seq
         
         self.total_frame_num = self.__total_frame_num()
 
         self.point_clouds = np.empty(shape=[self.total_frame_num, 1024, 6], dtype=np.float32)
         self.gt_xyz = np.empty(shape=[self.total_frame_num, 63], dtype=np.float32)
-        self.valid = np.empty(shape=[self.total_frame_num], dtype=np.float32)
+        self.valid = np.full(shape=[self.total_frame_num], fill_value=False, dtype=np.bool)
         self.volume_rotate = np.empty(shape=[self.total_frame_num, 3, 3], dtype=np.float32)
         self.bound_obb = np.empty(shape=[self.total_frame_num, 2, 3], dtype=np.float32)
 
@@ -55,16 +61,15 @@ class DatasetObj(torch.utils.data.Dataset):
 
         # calculate pca
         pca_coeff_mat = np.load('../pca_mean/PCA_coeff.npy').astype(np.float32)
-        pca_coeff_mat = pca_coeff_mat[:, :42]
         pca_mean = np.load('../pca_mean/PCA_mean.npy').astype(np.float32)
 
         tmp = np.broadcast_to(pca_mean, (self.total_frame_num, 63))
         tmp_diff = (self.gt_xyz - tmp)
-        self.gt_pca = torch.from_numpy(np.matmul(tmp_diff, pca_coeff_mat)).to(device)
+        self.gt_pca = torch.from_numpy(np.dot(tmp_diff, np.transpose(pca_coeff_mat))).to(device)
 
         self.gt_xyz = torch.from_numpy(self.gt_xyz).to(device)
-        self.pca_mean = torch.from_numpy(pca_mean).to(device)
-        self.pca_coeff = torch.from_numpy(np.transpose(pca_coeff_mat)).to(device)
+        self.pca_mean = torch.from_numpy(np.expand_dims(pca_mean, axis=0)).to(device)
+        self.pca_coeff = torch.from_numpy(pca_coeff_mat).to(device)
 
     def __getitem__(self, index):
         return self.point_clouds[index, :, :], self.gt_pca[index, :], self.gt_xyz[index, :], self.volume_rotate[index, :, :], self.bound_obb[index, :, :] 
@@ -87,6 +92,7 @@ class DatasetObj(torch.utils.data.Dataset):
                     gesture_folder = os.path.join('../processed', i_subject, i_gesture)
                     if not os.path.exists(gesture_folder): continue
                     for seq_idx in os.listdir(gesture_folder):
+                        if self.seq != None and seq_idx != self.seq: continue
                         self.__load_data_dir(os.path.join(gesture_folder, seq_idx))
 
     def __load_data_dir(self, seq_folder):
@@ -118,9 +124,12 @@ class DatasetObj(torch.utils.data.Dataset):
         else:
             for i_subject in self.test_subjects:
                 for i_gesture in self.gesture_names:
-                    if sys.platform.startswith('win32'):
-                        total += len(glob.glob(os.path.join(self.root_path, 'Video_files', i_subject, i_gesture, '**\*.jpeg'), recursive=True))
+                    if self.seq != None:
+                        total += len(glob.glob(os.path.join(self.root_path, 'Video_files', i_subject, i_gesture, self.seq, 'color', '*.jpeg'), recursive=True))
                     else:
-                        total += len(glob.glob(os.path.join(self.root_path, 'Video_files', i_subject, i_gesture, '**/*.jpeg'), recursive=True))
+                        if sys.platform.startswith('win32'):
+                            total += len(glob.glob(os.path.join(self.root_path, 'Video_files', i_subject, i_gesture, '**\*.jpeg'), recursive=True))
+                        else:
+                            total += len(glob.glob(os.path.join(self.root_path, 'Video_files', i_subject, i_gesture, '**/*.jpeg'), recursive=True))
         
         return total
