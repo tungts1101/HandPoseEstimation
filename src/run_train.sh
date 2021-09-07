@@ -6,3 +6,5 @@ elif [[ "$OSTYPE" == "msys" ]]; then
     echo "Running on window"
     python train.py --root_path ../hand_pose_action --model 2 --epoch 10
 fi
+
+python eval.py --weight weight --root_path ../hand_pose_action --subject Subject_2 --action put_salt --seq 1 --visualize True --model 2 

@@ -14,7 +14,7 @@ gesture_names_full = ['charge_cell_phone','clean_glasses','close_juice_bottle','
 test_subjects_full = ["Subject_2", "Subject_5", "Subject_6"]
 
 subject_names_small = ["Subject_1"]
-gesture_names_small = ['put_salt','use_calculator','handshake','high_five']
+gesture_names_small = ['put_salt','use_calculator','take_letter_from_enveloppe','open_juice_bottle','open_juice_bottle','open_letter','open_liquid_soap','open_milk','open_peanut_butter','open_soda_can','open_wallet']
 test_subjects_small = ["Subject_2"]
 
 

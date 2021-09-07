@@ -4,6 +4,21 @@ author: Liuhao Ge
 '''
 import torch
 
+def group_points_around_sample(points, estimate_joints):
+    device = points.device
+    B, N, C = points.shape # batch, num point, c = xyz + feature
+    
+    xyz = points[:, :, :3]
+    estimate_joints = estimate_joints.reshape(-1, 21, 3)
+
+    result = torch.zeros([B,21*64,C]).to(device) # B * 21 * 64 * C
+    for i in range(21):
+        dist = torch.norm(xyz - estimate_joints[:,i:i+1], dim=2, p=None)
+        knn = dist.topk(64, largest=False)
+        result[:,i*64:(i+1)*64,:] = torch.index_select(points, dim=1, index=knn.indices[0])
+
+    return result 
+
 def group_points(points, ball_radius):
     # group points using knn and ball query
     # points: B * 1024 * 6

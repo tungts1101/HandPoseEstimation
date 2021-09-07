@@ -11,6 +11,7 @@ import torch.utils.data
 import utils
 
 from hand_pointnet import PointNet_Plus
+from cascaded_pointnet import CascadedNetworkObj
 from mydataset import DatasetObj
 from mynetwork import NetworkObj
 import random
@@ -51,7 +52,7 @@ random.seed(args.seed)
 
 ### load data
 train_dataset = DatasetObj(root_path=args.root_path, is_train=True, is_full=args.is_full, device=device)
-train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True)
+train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=args.batch_size, shuffle=False)
 
 # test_dataset = DatasetObj(root_path=args.root_path, is_train=False, is_full=args.is_full, device=device)
 # test_dataloader = torch.utils.data.DataLoader(test_dataset, batch_size=args.batch_size, shuffle=True)
@@ -65,9 +66,11 @@ if args.model == 1:
     network = NetworkObj()
 elif args.model == 2:
     network = PointNet_Plus(args.ball_radius2)
+elif args.model == 3:
+    network = CascadedNetworkObj()
 
 network.to(device)
-logging.info(network)
+# logging.info(network)
 
 criterion = torch.nn.MSELoss(size_average=True).to(device)
 optimizer = torch.optim.Adam(network.parameters(), lr=args.lr, betas = (0.5, 0.999), eps=1e-06)
@@ -91,8 +94,14 @@ for epoch in range(args.epoch):
         elif isinstance(network, PointNet_Plus):
             inputs_level1, inputs_level1_center = utils.group_points(points, args.ball_radius)
             estimation = network(inputs_level1, inputs_level1_center)
+        elif isinstance(network, CascadedNetworkObj):
+            estimation_stage_1, estimation_stage_2, estimation = network(points, train_dataset.pca_mean, train_dataset.pca_coeff)
 
-        loss = criterion(estimation, gt_pca)
+        loss = None
+        if isinstance(network, CascadedNetworkObj):
+            loss = 0.25 * criterion(estimation_stage_1, gt_pca) + 0.25 * criterion(estimation_stage_2, gt_pca) + 0.5 * criterion(estimation, gt_pca)
+        else:
+            loss = criterion(estimation, gt_pca)
         
         # compute gradient
         loss.backward()
