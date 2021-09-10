@@ -16,6 +16,7 @@ for subject in subject_names_full:
         gesture_folder = os.path.join(processed_dir, subject, gesture)
         if not os.path.exists(gesture_folder): continue
         for seq_idx in os.listdir(os.path.join(processed_dir, subject, gesture)):
+            if not seq_idx.isnumeric(): continue
             gt_xyz = np.load(os.path.join(processed_dir, subject, gesture, seq_idx, 'gt_xyz.npy'))
             if jnt_xyz is None:
                 jnt_xyz = gt_xyz

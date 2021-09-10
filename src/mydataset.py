@@ -85,6 +85,7 @@ class DatasetObj(torch.utils.data.Dataset):
                     gesture_folder = os.path.join('../processed', i_subject, i_gesture)
                     if not os.path.exists(gesture_folder): continue
                     for seq_idx in os.listdir(gesture_folder):
+                        if not seq_idx.isnumeric(): continue
                         self.__load_data_dir(os.path.join(gesture_folder, seq_idx))
         else:
             for i_subject in self.test_subjects:
@@ -93,6 +94,7 @@ class DatasetObj(torch.utils.data.Dataset):
                     if not os.path.exists(gesture_folder): continue
                     for seq_idx in os.listdir(gesture_folder):
                         if self.seq != None and seq_idx != self.seq: continue
+                        if not seq_idx.isnumeric(): continue
                         self.__load_data_dir(os.path.join(gesture_folder, seq_idx))
 
     def __load_data_dir(self, seq_folder):

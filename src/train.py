@@ -70,11 +70,12 @@ elif args.model == 3:
     network = CascadedNetworkObj()
 
 network.to(device)
-# logging.info(network)
+logging.info(network)
 
 criterion = torch.nn.MSELoss(size_average=True).to(device)
 optimizer = torch.optim.Adam(network.parameters(), lr=args.lr, betas = (0.5, 0.999), eps=1e-06)
 scheduler = lr_scheduler.StepLR(optimizer, step_size=50, gamma=0.1)
+logging.info("================================================================================\n")
 
 best_err = float("inf")
 for epoch in range(args.epoch):
