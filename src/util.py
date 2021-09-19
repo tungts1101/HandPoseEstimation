@@ -2,6 +2,7 @@ import numpy as np
 import os
 import cv2
 from scipy.spatial import KDTree
+from PIL import Image
 
 def get_skeleton(sample, skel_root):
     skeleton_path = os.path.join(skel_root, sample['subject'],
@@ -105,6 +106,7 @@ def visualize(root_path, subject, action, seq, valid_idx, estimated_xyz):
     i_image = 0
     i_valid = 0
     folder = os.path.join(root_path, 'Video_files', subject, action, seq, 'color')
+    image_list = []
     for i_image, image_file in enumerate(os.listdir(folder)):
         if not valid_idx[i_image]:
             continue
@@ -120,11 +122,16 @@ def visualize(root_path, subject, action, seq, valid_idx, estimated_xyz):
 
         img = visualize_joints(gt_skel_proj, es_skel_proj)
         if len(img) == 0: continue
+        img = cv2.resize(img, (480, 800))
+        image_list.append(Image.fromarray(img))
 
-        winname = "Test"
-        cv2.namedWindow(winname)        # Create a named window
-        cv2.moveWindow(winname, 50,50) 
-        cv2.imshow(winname, img)
-        cv2.waitKey(0)
+        # winname = "Test"
+        # cv2.namedWindow(winname)        # Create a named window
+        # cv2.moveWindow(winname, 50,50) 
+        # cv2.imshow(winname, img)
+        # cv2.waitKey(0)
        
         i_valid += 1
+    
+    if image_list:
+        image_list[0].save('out.gif', save_all=True, append_images=image_list[1:])

@@ -8,3 +8,5 @@ elif [[ "$OSTYPE" == "msys" ]]; then
 fi
 
 python eval.py --weight weight --root_path ../hand_pose_action --subject Subject_2 --action put_salt --seq 1 --visualize True --model 2 
+
+python hand_detect_util.py --weights runs/weights/best2.pt --source ../../hand_pose_action --img 416 --conf 0.4 --device 0

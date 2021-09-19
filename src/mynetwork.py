@@ -29,6 +29,7 @@ class NetworkObj(nn.Module):
         l1_xyz, l1_points = self.sa1(l0_xyz.permute(0, 2, 1), l0_points.permute(0, 2, 1))
         l2_xyz, l2_points = self.sa2(l1_xyz, l1_points)
         l3_xyz, l3_points = self.sa3(l2_xyz, l2_points)
+        # print(l3_xyz.shape, l3_points.shape)
         out = l3_points.view(B, 1024)
         out = self.drop1(F.relu(self.bn1(self.fc1(out))))
         out = self.drop2(F.relu(self.bn2(self.fc2(out))))

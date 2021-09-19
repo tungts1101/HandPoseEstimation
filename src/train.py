@@ -14,6 +14,7 @@ from hand_pointnet import PointNet_Plus
 from cascaded_pointnet import CascadedNetworkObj
 from mydataset import DatasetObj
 from mynetwork import NetworkObj
+from pointunet import PointUNetObj
 import random
 
 parser = argparse.ArgumentParser()
@@ -68,6 +69,8 @@ elif args.model == 2:
     network = PointNet_Plus(args.ball_radius2)
 elif args.model == 3:
     network = CascadedNetworkObj()
+elif args.model == 4:
+    network = PointUNetObj()
 
 network.to(device)
 logging.info(network)
@@ -97,6 +100,8 @@ for epoch in range(args.epoch):
             estimation = network(inputs_level1, inputs_level1_center)
         elif isinstance(network, CascadedNetworkObj):
             estimation_stage_1, estimation_stage_2, estimation = network(points, train_dataset.pca_mean, train_dataset.pca_coeff)
+        elif isinstance(network, PointUNetObj):
+            estimation = network(points)
 
         loss = None
         if isinstance(network, CascadedNetworkObj):
@@ -117,6 +122,13 @@ for epoch in range(args.epoch):
         min_bound = bound_obb[:,:1,:]
         out_xyz_wld = torch.bmm(out_xyz.reshape(-1, 21, 3) * obb_len + min_bound, volume_rotate)
         gt_xyz_wld = torch.bmm(gt_xyz.reshape(-1, 21, 3) * obb_len + min_bound, volume_rotate)
+
+        # checked_out_xyz = torch.addmm(pca_mean, gt_pca, train_dataset.pca_coeff)
+        # checked_out_xyz_wld = torch.bmm(checked_out_xyz.reshape(-1, 21, 3) * obb_len + min_bound, volume_rotate)
+
+        # print(gt_xyz_wld[0])
+        # print(checked_out_xyz_wld[0])
+        # print(out_xyz_wld[0])
 
         diff = torch.pow(out_xyz_wld - gt_xyz_wld, 2).view(-1, 21, 3)
         diff_sum_sqrt = torch.sqrt(torch.sum(diff, 2))
