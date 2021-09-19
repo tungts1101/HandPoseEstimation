@@ -3,6 +3,7 @@ from scipy.spatial import distance
 import numpy as np
 import random
 import torch
+import torch.nn as nn
 
 def random_walk(center, k=10, max_dis=0.5):
     points = np.zeros((k, 3), dtype=np.float32)
@@ -37,24 +38,49 @@ def farthest_point_sampling(pts, k):
 def random_walk_torch(xyz, k=10, max_dis=0.1):
     """
     Input:
-        xyz: pointcloud centroids, [B, N, 3]
+        xyz: pointcloud centroids, [B, N, C]
         npoint: number of samples
     Return:
-        points: upsampled pointcloud index, [B, N*k, 3]
+        points: upsampled pointcloud index, [B, N*k, C]
     """
     device = xyz.device
     B, N, C = xyz.shape
-    points = torch.zeros(B, N*k, C, dtype=torch.long).to(device)
+    points = torch.zeros(B, N*k, C, dtype=torch.float32).to(device)
     for i_batch in range(B):
         for i_center in range(N):
             center = xyz[i_batch, i_center, :]
             for i in range(k):
                 point = center + max_dis * (torch.rand(C,).to(device) - 1.0)
                 points[i_batch, i_center*k + i:, :] = point
-        
+
     return points
 
 def timeit(tag, start_time):
     end_time = time.time()
     print("{}: {}s".format(tag, end_time - start_time))
     return end_time
+
+# class PointNetSetAbstraction(nn.Module):
+#     def __init__(self, inp_channels, out_channels, mlp, group_all):
+#         super(PointNetSetAbstraction, self).__init__()
+
+#         self.netR_1 = nn.Sequential(
+#             # B*INPUT_FEATURE_NUM*sample_num_level1*knn_K
+#             nn.Conv2d(self.INPUT_FEATURE_NUM, nstates_plus_1[0], kernel_size=(1, 1)),
+#             nn.BatchNorm2d(nstates_plus_1[0]),
+#             nn.ReLU(inplace=True),
+#             # B*64*sample_num_level1*knn_K
+#             nn.Conv2d(nstates_plus_1[0], nstates_plus_1[1], kernel_size=(1, 1)),
+#             nn.BatchNorm2d(nstates_plus_1[1]),
+#             nn.ReLU(inplace=True),
+#             # B*64*sample_num_level1*knn_K
+#             nn.Conv2d(nstates_plus_1[1], nstates_plus_1[2], kernel_size=(1, 1)),
+#             nn.BatchNorm2d(nstates_plus_1[2]),
+#             nn.ReLU(inplace=True),
+#             # B*128*sample_num_level1*knn_K
+#             nn.MaxPool2d((1,self.knn_K),stride=1)
+#             # B*128*sample_num_level1*1
+#         )
+    
+#     def forward(self, x, y):
+

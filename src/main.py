@@ -78,8 +78,10 @@ if __name__ == '__main__':
 
     # arr = torch.rand((64, 1024, 3)).to(device)
     # idx = farthest_point_sample(arr, 64)
+    # print(idx[0])
     # print(idx.shape)
 
     arr = torch.rand((64, 32, 16)).to(device)
-    idx = random_walk_torch(arr, 16)
-    print(idx.shape)
+    print(arr[0][0])
+    idx = random_walk_torch(arr, 16, 0.05)
+    print(idx[0][:5,:])
