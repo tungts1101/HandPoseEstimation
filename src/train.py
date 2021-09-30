@@ -39,6 +39,9 @@ now_str = now.strftime("%d-%m-%Y-%H-%M-%S")
 save_dir = os.path.join(args.save_dir, now_str)
 os.makedirs(save_dir)
 
+for handler in logging.root.handlers[:]:
+    logging.root.removeHandler(handler)
+
 logging.basicConfig(filename=os.path.join(save_dir, 'log.txt'), filemode='w', 
                     format='%(asctime)s %(message)s', datefmt='%d/%m/%Y %H:%M:%S', level=logging.INFO)
 logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))
