@@ -1,11 +1,12 @@
-from mylib import random_walk_torch
+from mylib import random_walk_torch, downsample_query_ball
 import torch
 import torch.nn as nn
-from Pointnet_Pointnet2_pytorch.models.pointnet2_utils import PointNetSetAbstraction, farthest_point_sample, index_points
+from Pointnet_Pointnet2_pytorch.models.pointnet2_utils import PointNetSetAbstraction, farthest_point_sample, index_points, sample_and_group
 import numpy as np
 import torch.nn.functional as F
-from utils import group_points_2
+from utils import group_points_2, group_points
 import open3d as o3d
+
 class UnpoolObj(nn.Module):
     def __init__(self):
         super(UnpoolObj, self).__init__()
@@ -18,19 +19,55 @@ class PoolObj(nn.Module):
         super(PoolObj, self).__init__()
     
     def forward(self, xyz, points):
-        # print(xyz.shape)
-        # print(points.shape)
-
-        # _xyz = xyz.permute(0, 2, 1)
-        # _points = points.permute(0, 2, 1)
         _xyz = xyz.squeeze(-1).permute(0, 2, 1)
         _points = points.squeeze(-1).permute(0, 2, 1)
 
-        # print(_xyz.shape)
-
         B, N, C = _xyz.shape
-        idx = farthest_point_sample(_xyz, N//2)
+        # idx = farthest_point_sample(_xyz, N//2)
+        idx = downsample_query_ball(_xyz, N//2, 0.05, 0.02)
         return index_points(_xyz, idx), index_points(_points, idx)
+
+class RefineNet(nn.Module):
+    def __init__(self):
+        super(RefineNet, self).__init__()
+
+        self.netR = nn.Sequential(
+            # B*INPUT_FEATURE_NUM*sample_num_level1*knn_K
+            nn.Conv2d(3, 64, kernel_size=(1, 1)),
+            nn.BatchNorm2d(64),
+            nn.ReLU(inplace=True),
+            # B*64*sample_num_level1*knn_K
+            nn.Conv2d(64, 64, kernel_size=(1, 1)),
+            nn.BatchNorm2d(64),
+            nn.ReLU(inplace=True),
+            # B*64*sample_num_level1*knn_K
+            nn.Conv2d(64, 128, kernel_size=(1, 1)),
+            nn.BatchNorm2d(128),
+            nn.ReLU(inplace=True),
+            # B*128*sample_num_level1*knn_K
+            nn.MaxPool2d((1, 64),stride=1),
+            # B*128*sample_num_level1*1
+        )
+
+        self.fc = nn.Sequential(
+            nn.Linear(128*21, 128),
+            nn.BatchNorm1d(128),
+            nn.ReLU(inplace=True),
+            nn.Linear(128, 63)
+        )
+    
+    def forward(self, xyz):
+        B, N = xyz.shape
+        joints = xyz.reshape(-1, 21, 3)
+        # joints = joints.permute(0, 2, 1)
+        joints = random_walk_torch(joints, 64, 0.02)
+        joints, joints_center = group_points_2(joints.permute(0, 2, 1), 21*64, 21, 64, 0.05)
+
+        x = self.netR(joints)
+        x = x.view(-1, 128*21)
+        x = self.fc(x)
+
+        return x
 
 nstates_plus_1 = [64,64,128]
 nstates_plus_2 = [128,128,256]
@@ -54,7 +91,7 @@ class PointUNetObj(nn.Module):
         # self.drop2 = nn.Dropout(0.4)
         # self.fc3 = nn.Linear(256, 42)
 
-        self.num_outputs = 42
+        self.num_outputs = 63
         self.knn_K = 64
         self.ball_radius2 = ball_radius2
         self.sample_num_level1 = 512
@@ -131,6 +168,7 @@ class PointUNetObj(nn.Module):
 
         self.pool = PoolObj() # 256x128
         self.unpool = UnpoolObj()
+        self.refine_net = RefineNet()
     
     # def forward(self, xyz):
     #     B, _, _ = xyz.shape
@@ -181,19 +219,22 @@ class PointUNetObj(nn.Module):
         x_ = torch.cat((y, x),1).squeeze(-1)
         # B*(3+128)*sample_num_level1
 
-        inputs_level2_, inputs_level2_center_ = group_points_2(x_, self.sample_num_level1, 128, self.knn_K, self.ball_radius2)
+        
+        # inputs_level2_, inputs_level2_center_ = group_points_2(x_, self.sample_num_level1, 128, self.knn_K, self.ball_radius2)
+        x_ = x.squeeze_(-1).permute(0, 2, 1)
+        y_ = y.squeeze_(-1).permute(0, 2, 1)
+        inputs_level2_center_, inputs_level2_ = sample_and_group(128, self.ball_radius2, self.knn_K, y_, x_)
+        inputs_level2_ = inputs_level2_.permute(0, 3, 1, 2)
+        inputs_level2_center_ = inputs_level2_center_.permute(0, 2, 1).unsqueeze_(3)
         x_ = self.netR_2(inputs_level2_)
 
         y_pool, x_pool = self.pool(y, x)
-        # print(x_pool.shape, y_pool.shape)
         x = torch.cat((y_pool.permute(0, 2, 1), x_pool.permute(0, 2, 1)),1)
-
-        # print(x.shape)
         
-        inputs_level2, inputs_level2_center = group_points_2(x, self.sample_num_level1 // 2, self.sample_num_level2, self.knn_K, self.ball_radius2)
-        # B*131*sample_num_level2*knn_K, B*3*sample_num_level2*1
-
-        # print(inputs_level2.shape, inputs_level2_center.shape)
+        # inputs_level2, inputs_level2_center = group_points_2(x, self.sample_num_level1 // 2, self.sample_num_level2, self.knn_K, self.ball_radius2)
+        inputs_level2_center, inputs_level2 = sample_and_group(self.sample_num_level2, self.ball_radius2, self.knn_K, y_pool, x_pool)
+        inputs_level2 = inputs_level2.permute(0, 3, 1, 2)
+        inputs_level2_center = inputs_level2_center.permute(0, 2, 1).unsqueeze_(3)
         
         # B*131*sample_num_level2*knn_K
         x = self.netR_2(inputs_level2)
@@ -201,15 +242,11 @@ class PointUNetObj(nn.Module):
         # x = torch.cat((inputs_level2_center, x),1)
         # B*259*sample_num_level2*1
 
-        # print(x.shape)
-
         y_unpool, x_unpool = self.unpool(inputs_level2_center, x)
         # print(y_unpool.shape, x_unpool.shape)
 
         x = x_pool.permute(0, 2, 1)
-
         x = torch.cat((y_unpool.permute(0, 2, 1), x_unpool.permute(0, 2, 1)), 1).unsqueeze(3)
-
 
         x_ = torch.cat((inputs_level2_center_, x_), 1)
         x = torch.cat((x, x_), 2)
@@ -227,5 +264,7 @@ class PointUNetObj(nn.Module):
 
         x = self.netR_FC(x)
         # B*num_outputs
+
+        # x = self.refine_net(x)
 
         return x
