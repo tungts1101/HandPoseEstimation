@@ -54,6 +54,7 @@ for i_subject in subject_names_full:
         if not os.path.exists(gesture_folder): continue
         for seq_idx in os.listdir(gesture_folder):
             if not seq_idx.isnumeric(): continue
+            if not os.path.exists(os.path.join(gesture_folder, seq_idx)): continue
 
             bound_obb = np.load(os.path.join(gesture_folder, seq_idx, 'bound_obb.npy'))
             volume_rotate = np.load(os.path.join(gesture_folder, seq_idx, 'volume_rotate.npy'))
