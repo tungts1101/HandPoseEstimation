@@ -48,9 +48,10 @@ def get_obj_transform(sample, obj_root):
 
 object_infos = load_objects(obj_root)
 
-try:
-    for i_subject in subject_names_full:
-        print(i_subject)
+
+for i_subject in subject_names_full:
+    print(i_subject)
+    try:
         for i_gesture in obj_contained_action:
             gesture_folder = os.path.join('..\processed', i_subject, i_gesture).replace('\\', '/')
             if not os.path.exists(gesture_folder): continue
@@ -90,5 +91,5 @@ try:
                     points[frame_idx, :, :] = verts_trans
             
                 np.save(os.path.join(gesture_folder, seq_idx, 'obj_xyz.npy'), points)
-except Exception as e:
-    print(e)
+    except Exception as e:
+        print(e)
