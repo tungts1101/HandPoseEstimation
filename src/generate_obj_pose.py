@@ -50,12 +50,11 @@ object_infos = load_objects(obj_root)
 
 
 for i_subject in subject_names_full:
-    print(i_subject)
-    try:
-        for i_gesture in obj_contained_action:
-            gesture_folder = os.path.join('..\processed', i_subject, i_gesture).replace('\\', '/')
-            if not os.path.exists(gesture_folder): continue
-            for seq_idx in os.listdir(gesture_folder):
+    for i_gesture in obj_contained_action:
+        gesture_folder = os.path.join('..\processed', i_subject, i_gesture).replace('\\', '/')
+        if not os.path.exists(gesture_folder): continue
+        for seq_idx in os.listdir(gesture_folder):
+            try:
                 if not seq_idx.isnumeric(): continue
                 if not os.path.exists(os.path.join(gesture_folder, seq_idx)): continue
                 if len(os.listdir(os.path.join(gesture_folder, seq_idx))) == 0: continue
@@ -89,7 +88,7 @@ for i_subject in subject_names_full:
                     verts_trans = np.matmul(verts_trans, volume_rotate[frame_idx].transpose())
                     verts_trans = (verts_trans - bound_obb[frame_idx][0]) / (bound_obb[frame_idx][1] - bound_obb[frame_idx][0])
                     points[frame_idx, :, :] = verts_trans
-            
-                np.save(os.path.join(gesture_folder, seq_idx, 'obj_xyz.npy'), points)
-    except Exception as e:
-        print(e)
+                
+                    np.save(os.path.join(gesture_folder, seq_idx, 'obj_xyz.npy'), points)
+            except Exception as e:
+                print(e)
