@@ -48,44 +48,47 @@ def get_obj_transform(sample, obj_root):
 
 object_infos = load_objects(obj_root)
 
-for i_subject in subject_names_full:
-    print(i_subject)
-    for i_gesture in obj_contained_action:
-        gesture_folder = os.path.join('..\processed', i_subject, i_gesture).replace('\\', '/')
-        if not os.path.exists(gesture_folder): continue
-        for seq_idx in os.listdir(gesture_folder):
-            if not seq_idx.isnumeric(): continue
-            if not os.path.exists(os.path.join(gesture_folder, seq_idx)): continue
-            if len(os.listdir(os.path.join(gesture_folder, seq_idx))) == 0: continue
+try:
+    for i_subject in subject_names_full:
+        print(i_subject)
+        for i_gesture in obj_contained_action:
+            gesture_folder = os.path.join('..\processed', i_subject, i_gesture).replace('\\', '/')
+            if not os.path.exists(gesture_folder): continue
+            for seq_idx in os.listdir(gesture_folder):
+                if not seq_idx.isnumeric(): continue
+                if not os.path.exists(os.path.join(gesture_folder, seq_idx)): continue
+                if len(os.listdir(os.path.join(gesture_folder, seq_idx))) == 0: continue
 
-            bound_obb = np.load(os.path.join(gesture_folder, seq_idx, 'bound_obb.npy'))
-            volume_rotate = np.load(os.path.join(gesture_folder, seq_idx, 'volume_rotate.npy'))
-            valid_frame_idx = np.load(os.path.join(gesture_folder, seq_idx, 'valid.npy')).astype(np.bool)
+                bound_obb = np.load(os.path.join(gesture_folder, seq_idx, 'bound_obb.npy'))
+                volume_rotate = np.load(os.path.join(gesture_folder, seq_idx, 'volume_rotate.npy'))
+                valid_frame_idx = np.load(os.path.join(gesture_folder, seq_idx, 'valid.npy')).astype(np.bool)
 
-            # i_gt_xyz = np.matmul(i_gt_xyz, obb.R.transpose())
-            # i_gt_xyz = (i_gt_xyz - min_bound) / obb_len
-            num_frame = bound_obb.shape[0]
-            points = np.zeros((num_frame, 8, 3)).astype(np.float32)
+                # i_gt_xyz = np.matmul(i_gt_xyz, obb.R.transpose())
+                # i_gt_xyz = (i_gt_xyz - min_bound) / obb_len
+                num_frame = bound_obb.shape[0]
+                points = np.zeros((num_frame, 8, 3)).astype(np.float32)
 
-            for frame_idx in range(num_frame):
-                if not valid_frame_idx[frame_idx]: continue
-                sample = {
-                    'subject': i_subject,
-                    'action_name': i_gesture,
-                    'seq_idx': seq_idx,
-                    'frame_idx': frame_idx
-                }
+                for frame_idx in range(num_frame):
+                    if not valid_frame_idx[frame_idx]: continue
+                    sample = {
+                        'subject': i_subject,
+                        'action_name': i_gesture,
+                        'seq_idx': seq_idx,
+                        'frame_idx': frame_idx
+                    }
 
-                obj_trans = get_obj_transform(sample, obj_trans_root)
-                mesh = object_infos[obj_map_with_action[i_gesture]]
-                verts = np.array(mesh.bounding_box_oriented.vertices) * 1000
+                    obj_trans = get_obj_transform(sample, obj_trans_root)
+                    mesh = object_infos[obj_map_with_action[i_gesture]]
+                    verts = np.array(mesh.bounding_box_oriented.vertices) * 1000
 
-                hom_verts = np.concatenate([verts, np.ones([verts.shape[0], 1])], axis=1)
-                verts_trans = obj_trans.dot(hom_verts.T).T
-                verts_trans = verts_trans[:, :-1]
+                    hom_verts = np.concatenate([verts, np.ones([verts.shape[0], 1])], axis=1)
+                    verts_trans = obj_trans.dot(hom_verts.T).T
+                    verts_trans = verts_trans[:, :-1]
 
-                verts_trans = np.matmul(verts_trans, volume_rotate[frame_idx].transpose())
-                verts_trans = (verts_trans - bound_obb[frame_idx][0]) / (bound_obb[frame_idx][1] - bound_obb[frame_idx][0])
-                points[frame_idx, :, :] = verts_trans
-        
-            np.save(os.path.join(gesture_folder, seq_idx, 'obj_xyz.npy'), points)
+                    verts_trans = np.matmul(verts_trans, volume_rotate[frame_idx].transpose())
+                    verts_trans = (verts_trans - bound_obb[frame_idx][0]) / (bound_obb[frame_idx][1] - bound_obb[frame_idx][0])
+                    points[frame_idx, :, :] = verts_trans
+            
+                np.save(os.path.join(gesture_folder, seq_idx, 'obj_xyz.npy'), points)
+except Exception as e:
+    print(e)
