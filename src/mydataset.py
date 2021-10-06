@@ -13,18 +13,20 @@ gesture_names_full = ['charge_cell_phone','clean_glasses','close_juice_bottle','
 'squeeze_sponge','stir','take_letter_from_enveloppe','tear_paper','toast_wine','unfold_glasses','use_calculator','use_flash','wash_sponge','write']
 test_subjects_full = ["Subject_2", "Subject_5", "Subject_6"]
 
-subject_names_small = ["Subject_1"]
+subject_names_small = ["Subject_1", "Subject_2"]
 # gesture_names_small = ['put_salt','use_calculator','take_letter_from_enveloppe','open_juice_bottle','open_juice_bottle','open_letter','open_liquid_soap','open_milk','open_peanut_butter','open_soda_can','open_wallet']
 gesture_names_small = ['put_salt']
 test_subjects_small = ["Subject_2"]
 
 obj_contained_action = ['close_juice_bottle', 'close_liquid_soap', 'close_milk', 'open_juice_bottle', 'open_liquid_soap', 
 'open_milk', 'pour_juice_bottle', 'pour_liquid_soap', 'pour_milk', 'put_salt']
+test_seq = ['3']
 
 class DatasetObj(torch.utils.data.Dataset):
-    def __init__(self, root_path, is_train=True, is_full=True, device='cpu',subject='',action='',seq=''):
-        self.root_path = root_path
+    def __init__(self, is_train=True, is_full=True, device='cpu', is_obj=False, subject='',action='',seq=''):
+        #self.root_path = root_path
         self.is_train = is_train
+        self.is_obj = is_obj
 
         self.start_idx = 0
         self.end_idx = 0
@@ -33,16 +35,23 @@ class DatasetObj(torch.utils.data.Dataset):
             self.subject_names = subject_names_full
             self.gesture_names = gesture_names_full
             self.test_subjects = test_subjects_full
+            if self.is_obj:
+                self.gesture_names = obj_contained_action
         else:
             self.subject_names = subject_names_small
             self.gesture_names = gesture_names_small
             self.test_subjects = test_subjects_small
+            if self.is_obj:
+                self.gesture_names = obj_contained_action
 
         if not self.is_train:
             self.subject_names = [subject] if subject != '' else self.subject_names
             self.gesture_names = [action] if action != '' else self.gesture_names
             self.seq = None if seq == '' else seq
         
+        print("Subjects: {}\nTest subjects: {}\nGestures: {}\n".format(
+            self.subject_names, self.test_subjects, self.gesture_names))
+
         self.total_frame_num = self.__total_frame_num()
 
         self.point_clouds = np.empty(shape=[self.total_frame_num, 1024, 6], dtype=np.float32)
@@ -50,6 +59,7 @@ class DatasetObj(torch.utils.data.Dataset):
         self.valid = np.full(shape=[self.total_frame_num], fill_value=False, dtype=np.bool)
         self.volume_rotate = np.empty(shape=[self.total_frame_num, 3, 3], dtype=np.float32)
         self.bound_obb = np.empty(shape=[self.total_frame_num, 2, 3], dtype=np.float32)
+        self.obj_xyz = np.empty(shape=[self.total_frame_num, 8, 3], dtype=np.float32)
 
         self.__load_data()
 
@@ -59,6 +69,7 @@ class DatasetObj(torch.utils.data.Dataset):
         self.gt_xyz = np.take(self.gt_xyz, valid_indexes, axis=0)
         self.volume_rotate = torch.from_numpy(np.take(self.volume_rotate, valid_indexes, axis=0)).to(device)
         self.bound_obb = torch.from_numpy(np.take(self.bound_obb, valid_indexes, axis=0)).to(device)
+        self.obj_xyz = torch.from_numpy(np.take(self.obj_xyz, valid_indexes, axis=0)).to(device)
 
         self.total_frame_num = self.point_clouds.size(0)
 
@@ -75,7 +86,7 @@ class DatasetObj(torch.utils.data.Dataset):
         self.pca_coeff = torch.from_numpy(pca_coeff_mat).to(device)
 
     def __getitem__(self, index):
-        return self.point_clouds[index, :, :], self.gt_pca[index, :], self.gt_xyz[index, :], self.volume_rotate[index, :, :], self.bound_obb[index, :, :] 
+        return self.point_clouds[index, :, :], self.gt_pca[index, :], self.gt_xyz[index, :], self.volume_rotate[index, :, :], self.bound_obb[index, :, :], self.obj_xyz[index, :, :] 
 
     def __len__(self):
         return self.point_clouds.size(0)
@@ -83,22 +94,34 @@ class DatasetObj(torch.utils.data.Dataset):
     def __load_data(self):
         if self.is_train:
             for i_subject in self.subject_names:
-                if i_subject in self.test_subjects: continue
+                #if i_subject in self.test_subjects: continue
                 for i_gesture in self.gesture_names:
-                    gesture_folder = os.path.join('../processed', i_subject, i_gesture)
+                    gesture_folder = os.path.join('..', 'processed', i_subject, i_gesture)
                     if not os.path.exists(gesture_folder): continue
-                    for seq_idx in os.listdir(gesture_folder):
-                        if not seq_idx.isnumeric(): continue
-                        self.__load_data_dir(os.path.join(gesture_folder, seq_idx))
+                    for i_seq in os.listdir(gesture_folder):
+                        try:
+                            if i_seq in test_seq: continue
+                            if not i_seq.isnumeric(): continue
+                            if self.is_obj and not os.path.exists(os.path.join(gesture_folder, i_seq, 'obj_xyz.npy')): continue
+                            self.__load_data_dir(os.path.join(gesture_folder, i_seq))
+                        except Exception as e:
+                            print(e)
         else:
-            for i_subject in self.test_subjects:
+            #for i_subject in self.test_subjects:
+            for i_subject in self.subject_names:
                 for i_gesture in self.gesture_names:
-                    gesture_folder = os.path.join('../processed', i_subject, i_gesture)
+                    gesture_folder = os.path.join('..', 'processed', i_subject, i_gesture)
                     if not os.path.exists(gesture_folder): continue
-                    for seq_idx in os.listdir(gesture_folder):
-                        if self.seq != None and seq_idx != self.seq: continue
-                        if not seq_idx.isnumeric(): continue
-                        self.__load_data_dir(os.path.join(gesture_folder, seq_idx))
+                    #for i_seq in os.listdir(gesture_folder):
+                    for i_seq in test_seq:
+                        try:
+                            if not os.path.exists(os.path.join(gesture_folder, i_seq)): continue
+                            if self.seq != None and i_seq != self.seq: continue
+                            if not i_seq.isnumeric(): continue
+                            if self.is_obj and not os.path.exists(os.path.join(gesture_folder, i_seq, 'obj_xyz.npy')): continue
+                            self.__load_data_dir(os.path.join(gesture_folder, i_seq))
+                        except Exception as e:
+                            print(e)
 
     def __load_data_dir(self, seq_folder):
         point_cloud = np.load(os.path.join(seq_folder, 'points.npy')).astype(np.float32)
@@ -106,6 +129,9 @@ class DatasetObj(torch.utils.data.Dataset):
         bound_obb = np.load(os.path.join(seq_folder, 'bound_obb.npy')).astype(np.float32)
         volume_rotate = np.load(os.path.join(seq_folder, 'volume_rotate.npy')).astype(np.float32)
         valid = np.load(os.path.join(seq_folder, 'valid.npy')).astype(np.bool)
+
+        if self.is_obj:
+            obj_xyz = np.load(os.path.join(seq_folder, 'obj_xyz.npy')).astype(np.float32)
 
         self.start_idx = self.end_idx + 1
         self.end_idx = self.end_idx + point_cloud.shape[0]
@@ -116,25 +142,61 @@ class DatasetObj(torch.utils.data.Dataset):
         self.volume_rotate[(self.start_idx-1):self.end_idx, :, :] = volume_rotate
         self.valid[(self.start_idx-1):self.end_idx] = valid
 
+        if self.is_obj:
+            self.obj_xyz[(self.start_idx-1):self.end_idx] = obj_xyz
+
     def __total_frame_num(self):
         total = 0
         if self.is_train:
             for i_subject in self.subject_names:
-                if i_subject in self.test_subjects: continue
+                #if i_subject in self.test_subjects: continue
                 for i_gesture in self.gesture_names:
-                    if sys.platform.startswith('win32'):
-                        total += len(glob.glob(os.path.join(self.root_path, 'Video_files', i_subject, i_gesture, '**\*.jpeg'), recursive=True))
-                    else:
-                        total += len(glob.glob(os.path.join(self.root_path, 'Video_files', i_subject, i_gesture, '**/*.jpeg'), recursive=True))
+                    try:
+                        #gesture_folder = os.path.join(self.root_path, 'Video_files', i_subject, i_gesture)
+                        gesture_folder = os.path.join('..', 'processed', i_subject, i_gesture)
+                        if not os.path.exists(gesture_folder): continue
+                        for i_seq in os.listdir(gesture_folder):
+                            try:
+                                if i_seq in test_seq: continue
+                                seq_valid_path = os.path.join(gesture_folder, i_seq, 'valid.npy')
+                                if not os.path.exists(seq_valid_path): continue
+                                valid = np.load(seq_valid_path).astype(np.bool)
+                                total += valid.shape[0]
+                                #total += len(os.listdir(os.path.join(gesture_folder, i_seq)))
+                            except Exception as e:
+                                print(e)
+                    except Exception as e:
+                        print(e)
+                    #if sys.platform.startswith('win32'):
+                    #    total += len(glob.glob(os.path.join(self.root_path, 'Video_files', i_subject, i_gesture, '**\*.jpeg'), recursive=True))
+                    #else:
+                    #    total += len(glob.glob(os.path.join(self.root_path, 'Video_files', i_subject, i_gesture, '**/*.jpeg'), recursive=True))
         else:
-            for i_subject in self.test_subjects:
+            #for i_subject in self.test_subjects:
+            for i_subject in self.subject_names:
                 for i_gesture in self.gesture_names:
-                    if self.seq != None:
-                        total += len(glob.glob(os.path.join(self.root_path, 'Video_files', i_subject, i_gesture, self.seq, 'color', '*.jpeg'), recursive=True))
-                    else:
-                        if sys.platform.startswith('win32'):
-                            total += len(glob.glob(os.path.join(self.root_path, 'Video_files', i_subject, i_gesture, '**\*.jpeg'), recursive=True))
-                        else:
-                            total += len(glob.glob(os.path.join(self.root_path, 'Video_files', i_subject, i_gesture, '**/*.jpeg'), recursive=True))
-        
+                    try:
+                        #gesture_folder = os.path.join(self.root_path, 'Video_files', i_subject, i_gesture)
+                        gesture_folder = os.path.join('..', 'processed', i_subject, i_gesture)
+                        if not os.path.exists(gesture_folder): continue
+                        for i_seq in test_seq:
+                            try:
+                                seq_valid_path = os.path.join(gesture_folder, i_seq, 'valid.npy')
+                                if not os.path.exists(seq_valid_path): continue
+                                valid = np.load(seq_valid_path).astype(np.bool)
+                                total += valid.shape[0]
+                                #total += len(os.listdir(os.path.join(gesture_folder, i_seq)))
+                            except Exception as e:
+                                print(e)
+                    except Exception as e:
+                        print(e)
+
+                    #if self.seq != None:
+                    #    total += len(glob.glob(os.path.join(self.root_path, 'Video_files', i_subject, i_gesture, self.seq, 'color', '*.jpeg'), recursive=True))
+                    #else:
+                    #    if sys.platform.startswith('win32'):
+                    #        total += len(glob.glob(os.path.join(self.root_path, 'Video_files', i_subject, i_gesture, '**\*.jpeg'), recursive=True))
+                    #    else:
+                    #        total += len(glob.glob(os.path.join(self.root_path, 'Video_files', i_subject, i_gesture, '**/*.jpeg'), recursive=True))
+
         return total

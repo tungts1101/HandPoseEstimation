@@ -52,11 +52,11 @@ def visualize_joints(gt_joints, es_joints):
 def _draw2djoints(image, joints, links, col):
     """Draw segments, one color per link"""
     colors = [
-        (255, 0, 0),
         (0, 255, 255),
+        (255, 0, 0),
         (0, 255, 0),
+        (255, 0, 255),
         (0, 0, 255),
-        (255, 0, 255)
     ]
 
     for finger_idx, finger_links in enumerate(links):
@@ -69,7 +69,7 @@ def _draw2djoints(image, joints, links, col):
             pt = [int(x) for x in joints[finger_links[idx]]]
             cv2.circle(image, pt, 3, color=col if col is not None else colors[finger_idx], thickness=-1)
 
-def visualize(root_path, subject, action, seq, valid_idx, estimated_xyz):
+def visualize(save_dir, root_path, subject, action, seq, valid_idx, estimated_xyz):
     reorder_idx = np.array([
         0, 1, 6, 7, 8, 2, 9, 10, 11, 3, 12, 13, 14, 4, 15, 16, 17, 5, 18, 19,
         20
@@ -107,23 +107,30 @@ def visualize(root_path, subject, action, seq, valid_idx, estimated_xyz):
     i_valid = 0
     folder = os.path.join(root_path, 'Video_files', subject, action, seq, 'color')
     image_list = []
+
+    estimated_xyz = estimated_xyz[:, reorder_idx]
+
+    os.makedirs(os.path.join(save_dir, 'out'))
+
     for i_image, image_file in enumerate(os.listdir(folder)):
         if not valid_idx[i_image]:
             continue
    
-        gt_skel = gt_skels[i_valid]
+        gt_skel = gt_skels[i_image]
         es_skel = estimated_xyz[i_valid]
 
         img = cv2.imread(os.path.join(folder, image_file))
 
         gt_skel_proj = get_skel(gt_skel)
         es_skel_proj = get_skel(es_skel)
-        # visualize_joints_2d(img, gt_skel_proj, es_skel_proj)
 
         img = visualize_joints(gt_skel_proj, es_skel_proj)
         if len(img) == 0: continue
         img = cv2.resize(img, (480, 800))
         image_list.append(Image.fromarray(img))
+
+        print(os.path.join(save_dir, 'out', 'img_{}_{}.jpeg'.format(i_image, i_valid)))
+        cv2.imwrite(os.path.join(save_dir, 'out', 'img_{}_{}.jpeg'.format(i_image, i_valid)), img)
 
         # winname = "Test"
         # cv2.namedWindow(winname)        # Create a named window
@@ -133,5 +140,6 @@ def visualize(root_path, subject, action, seq, valid_idx, estimated_xyz):
        
         i_valid += 1
     
-    if image_list:
-        image_list[0].save('out.gif', save_all=True, append_images=image_list[1:])
+    # if image_list:
+        # print("Save to gif")
+        # image_list[0].save('out.gif', save_all=True, append_images=image_list[1:])

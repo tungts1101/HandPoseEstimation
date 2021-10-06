@@ -51,7 +51,7 @@ object_infos = load_objects(obj_root)
 
 for i_subject in subject_names_full:
     for i_gesture in obj_contained_action:
-        gesture_folder = os.path.join('..\processed', i_subject, i_gesture).replace('\\', '/')
+        gesture_folder = os.path.join('..', 'processed', i_subject, i_gesture)
         if not os.path.exists(gesture_folder): continue
         for seq_idx in os.listdir(gesture_folder):
             try:

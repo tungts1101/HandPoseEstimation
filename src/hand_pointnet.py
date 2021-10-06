@@ -10,7 +10,7 @@ nstates_plus_3 = [256,512,1024,1024,512]
 class PointNet_Plus(nn.Module):
     def __init__(self, ball_radius2):
         super(PointNet_Plus, self).__init__()
-        self.num_outputs = 42
+        self.num_outputs = 87
         self.knn_K = 64
         self.ball_radius2 = ball_radius2
         self.sample_num_level1 = 512

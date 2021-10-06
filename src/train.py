@@ -23,7 +23,7 @@ parser.add_argument('--is_full', type=bool, default=False)
 parser.add_argument('--pca_size', type=int, default=42)
 parser.add_argument('--batch_size', type=int, default=64)
 parser.add_argument('--seed', type=int, default=11)
-parser.add_argument('--save_dir', type=str, default='train', help="Folder to save pt file")
+parser.add_argument('--save_dir', type=str, default='train_result', help="Folder to save pt file")
 parser.add_argument('--model', type=int, default=1)
 
 parser.add_argument('--ball_radius', type=float, default=0.015, help='square of radius for ball query in level 1')
@@ -55,14 +55,14 @@ torch.manual_seed(args.seed)
 random.seed(args.seed)
 
 ### load data
-train_dataset = DatasetObj(root_path=args.root_path, is_train=True, is_full=args.is_full, device=device)
+train_dataset = DatasetObj(is_train=True, is_full=args.is_full, is_obj=True, device=device)
 train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True)
 
-test_dataset = DatasetObj(root_path=args.root_path, is_train=False, is_full=args.is_full, device=device)
+test_dataset = DatasetObj(is_train=False, is_full=args.is_full, is_obj=True, device=device)
 test_dataloader = torch.utils.data.DataLoader(test_dataset, batch_size=args.batch_size, shuffle=True)
 
-# logging.info("Train data: {}, Test data: {}".format(len(train_dataset), len(test_dataset)))
-logging.info("Train data: {}".format(len(train_dataset)))
+logging.info("Train data: {}, Test data: {}".format(len(train_dataset), len(test_dataset)))
+# logging.info("Train data: {}".format(len(train_dataset)))
 
 ### load model
 network = None
@@ -76,11 +76,11 @@ elif args.model == 4:
     network = PointUNetObj(args.ball_radius2)
 
 network.to(device)
-# logging.info(network)
+logging.info(network)
 
 criterion = torch.nn.MSELoss(size_average=True).to(device)
-optimizer = torch.optim.Adam(network.parameters(), lr=args.lr, betas = (0.9, 0.999), eps=1e-08)
-scheduler = lr_scheduler.StepLR(optimizer, step_size=25, gamma=0.1)
+optimizer = torch.optim.Adam(network.parameters(), lr=args.lr, betas = (0.9, 0.999), eps=1e-05)
+scheduler = lr_scheduler.StepLR(optimizer, step_size=50, gamma=0.1)
 logging.info("================================================================================\n")
 
 best_err = float("inf")
@@ -91,7 +91,8 @@ for epoch in range(args.epoch):
     train_mse_wld = 0.0
 
     for i, data in enumerate(tqdm(train_dataloader, 0)):
-        points, gt_pca, gt_xyz, volume_rotate, bound_obb = data
+        points, gt_pca, gt_xyz, volume_rotate, bound_obb, obj_xyz = data
+        B, _, _ = obj_xyz.shape
 
         ## compute output
         optimizer.zero_grad()
@@ -108,30 +109,19 @@ for epoch in range(args.epoch):
         if isinstance(network, CascadedNetworkObj):
             loss = 0.25 * criterion(estimation_stage_1, gt_pca) + 0.25 * criterion(estimation_stage_2, gt_pca) + 0.5 * criterion(estimation, gt_pca)
         else:
-            loss = criterion(estimation, gt_xyz)
+            loss =  criterion(estimation, torch.cat((gt_xyz, obj_xyz.reshape(B, 24)), dim=1)) * 87
         
-        loss = loss * 63
-
         # compute gradient
         loss.backward()
         optimizer.step()
 
         ## update error
         train_mse = train_mse + loss.item()*len(points)
-        # pca_mean = train_dataset.pca_mean.expand(estimation.data.size(0), train_dataset.pca_mean.size(1))
-        # out_xyz = torch.addmm(pca_mean, estimation.data, train_dataset.pca_coeff)
 
         obb_len = torch.diff(bound_obb, dim=1)
         min_bound = bound_obb[:,:1,:]
-        out_xyz_wld = torch.bmm(estimation.data.reshape(-1, 21, 3) * obb_len + min_bound, volume_rotate)
+        out_xyz_wld = torch.bmm(estimation.data[:, :63].reshape(-1, 21, 3) * obb_len + min_bound, volume_rotate)
         gt_xyz_wld = torch.bmm(gt_xyz.reshape(-1, 21, 3) * obb_len + min_bound, volume_rotate)
-
-        # checked_out_xyz = torch.addmm(pca_mean, gt_pca, train_dataset.pca_coeff)
-        # checked_out_xyz_wld = torch.bmm(checked_out_xyz.reshape(-1, 21, 3) * obb_len + min_bound, volume_rotate)
-
-        # print(gt_xyz_wld[0])
-        # print(checked_out_xyz_wld[0])
-        # print(out_xyz_wld[0])
 
         diff = torch.pow(out_xyz_wld - gt_xyz_wld, 2).view(-1, 21, 3)
         diff_sum_sqrt = torch.sqrt(torch.sum(diff, 2))
@@ -150,11 +140,11 @@ for epoch in range(args.epoch):
     # torch.save(network.state_dict(), os.path.join(save_dir, "network_{}.pth".format(epoch)))
     # torch.save(optimizer.state_dict(), os.path.join(save_dir, "optimizer_{}.pth".format(epoch)))
 
-    # if best_err > train_mse_wld:
-    #     best_err = train_mse_wld
-    #     logging.info("Save best with error: {}".format(best_err))
-    #     torch.save(network.state_dict(), os.path.join(save_dir, "network_best.pth".format(epoch)))
-    #     torch.save(optimizer.state_dict(), os.path.join(save_dir, "optimizer_best.pth".format(epoch)))
+    if best_err > train_mse_wld:
+        best_err = train_mse_wld
+        logging.info("Save best with error: {}".format(best_err))
+        torch.save(network.state_dict(), os.path.join(save_dir, "network_best.pth".format(epoch)))
+        torch.save(optimizer.state_dict(), os.path.join(save_dir, "optimizer_best.pth".format(epoch)))
 
     ## testing
     timer = time.time()
@@ -162,7 +152,8 @@ for epoch in range(args.epoch):
     test_mse_wld = 0.0
 
     for i, data in enumerate(tqdm(test_dataloader, 0)):
-        points, gt_pca, gt_xyz, volume_rotate, bound_obb = data
+        points, gt_pca, gt_xyz, volume_rotate, bound_obb, obj_xyz = data
+        B, _, _ = obj_xyz.shape
 
         ## compute output
         if isinstance(network, NetworkObj):
@@ -177,10 +168,7 @@ for epoch in range(args.epoch):
         if isinstance(network, CascadedNetworkObj):
             loss = 0.25 * criterion(estimation_stage_1, gt_pca) + 0.25 * criterion(estimation_stage_2, gt_pca) + 0.5 * criterion(estimation, gt_pca)
         else:
-            loss = criterion(estimation, gt_xyz)
-        loss = criterion(estimation, gt_xyz)
-
-        loss = loss * 63
+            loss = criterion(estimation, torch.cat((gt_xyz, obj_xyz.reshape(B, 24)), dim=1)) * 87
 
         ## update error
         test_mse = test_mse + loss.item()*len(points)
@@ -189,7 +177,7 @@ for epoch in range(args.epoch):
 
         obb_len = torch.diff(bound_obb, dim=1)
         min_bound = bound_obb[:,:1,:]
-        out_xyz_wld = torch.bmm(estimation.data.reshape(-1, 21, 3) * obb_len + min_bound, volume_rotate)
+        out_xyz_wld = torch.bmm(estimation.data[:, :63].reshape(-1, 21, 3) * obb_len + min_bound, volume_rotate)
         gt_xyz_wld = torch.bmm(gt_xyz.reshape(-1, 21, 3) * obb_len + min_bound, volume_rotate)
 
         diff = torch.pow(out_xyz_wld - gt_xyz_wld, 2).view(-1, 21, 3)
@@ -204,11 +192,11 @@ for epoch in range(args.epoch):
     test_mse_wld = test_mse_wld / len(test_dataset)
     logging.info("Test error 1 sample in world space: {} mm".format(test_mse_wld))
 
-    if best_err > test_mse_wld:
-        best_err = test_mse_wld
-        logging.info("Save best")
-        torch.save(network.state_dict(), os.path.join(save_dir, "network_best.pth".format(epoch)))
-        torch.save(optimizer.state_dict(), os.path.join(save_dir, "optimizer_best.pth".format(epoch)))
+    #if best_err > test_mse_wld:
+    #    best_err = test_mse_wld
+    #    logging.info("Save best")
+    #    torch.save(network.state_dict(), os.path.join(save_dir, "network_best.pth".format(epoch)))
+    #    torch.save(optimizer.state_dict(), os.path.join(save_dir, "optimizer_best.pth".format(epoch)))
     
     logging.info("Epoch: {}, train error: {} mm, test error: {} mm".format(epoch, train_mse_wld, test_mse_wld))
     logging.info("================================================================================\n")

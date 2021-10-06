@@ -4,6 +4,9 @@ import numpy as np
 import random
 import torch
 import torch.nn as nn
+import matplotlib.pyplot as plt
+
+from Pointnet_Pointnet2_pytorch.models.pointnet2_utils import index_points
 
 def random_walk(center, k=10, max_dis=0.5):
     points = np.zeros((k, 3), dtype=np.float32)
@@ -136,6 +139,32 @@ def downsample_query_ball(xyz, num_sample, radius1, radius2):
     point_idx = torch.argsort(point_rank, dim=1)[:, :num_sample]
     return point_idx
 
+def draw_joints(xyz):
+    reorder_idx = np.array([
+        0, 1, 6, 7, 8, 2, 9, 10, 11, 3, 12, 13, 14, 4, 15, 16, 17, 5, 18, 19,
+        20
+    ])
+    links = [(0, 1, 2, 3, 4), (0, 5, 6, 7, 8), (0, 9, 10, 11, 12),
+                (0, 13, 14, 15, 16), (0, 17, 18, 19, 20)]
+
+    xyz = xyz[reorder_idx]
+
+    fig = plt.figure()
+    ax = fig.add_subplot(projection='3d')
+
+    xs = xyz[:, 0]
+    ys = xyz[:, 1]
+    zs = xyz[:, 2]
+    ax.scatter(xs, ys, zs, marker='o')
+
+    for link in links:
+        ax.plot([xs[i] for i in link], [ys[i] for i in link], [zs[i] for i in link], color='b')
+
+    ax.set_xlabel('X Label')
+    ax.set_ylabel('Y Label')
+    ax.set_zlabel('Z Label')
+
+    plt.show()
 class PNSA(nn.Module):
     def __init__(self, inp_channels, out_channels, mlp, group_all, knn_k):
         super(PNSA, self).__init__()
@@ -156,3 +185,24 @@ class PNSA(nn.Module):
     
     def forward(self, x, y):
         pass
+
+class PointInterpConv(nn.Module):
+    def __init__(self):
+        super(PointInterpConv, self).__init__()
+
+    
+    def forawrd(self, xyz):
+        """
+        Input:
+            xyz: [B, N, C]
+        """
+        B, N, C = xyz.shape
+        l0_xyz = xyz[:, :, :3]
+        l0_points = xyz[:, :, 3:]
+        
+        kernel_idx = farthest_point_sampling(l0_xyz, N//2)
+        kernal_xyz, kernal_points = index_points(l0_xyz, kernel_idx), index_points(l0_points, kernel_idx)
+        kernal = torch.cat((kernal_xyz, kernal_points), dim=2)
+
+
+

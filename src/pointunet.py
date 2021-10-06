@@ -91,7 +91,7 @@ class PointUNetObj(nn.Module):
         # self.drop2 = nn.Dropout(0.4)
         # self.fc3 = nn.Linear(256, 42)
 
-        self.num_outputs = 63
+        self.num_outputs = 87
         self.knn_K = 64
         self.ball_radius2 = ball_radius2
         self.sample_num_level1 = 512
