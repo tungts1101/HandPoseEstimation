@@ -136,7 +136,7 @@ def downsample_query_ball(xyz, num_sample, radius1, radius2):
 
     div = torch.sum(torch.bmm(nb_rad_1, num_nb_rad_2), dim=2).to(device)
     point_rank = num_nb_rad_1 / (div + 1e-6)
-    point_idx = torch.argsort(point_rank, dim=1)[:, :num_sample]
+    point_idx = torch.argsort(point_rank, descending=True, dim=1)[:, :num_sample]
     return point_idx
 
 def draw_joints(xyz):
