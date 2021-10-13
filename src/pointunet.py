@@ -118,6 +118,24 @@ class PointUNetObj(nn.Module):
             nn.MaxPool2d((1,self.knn_K),stride=1)
             # B*256*sample_num_level2*1
         )
+
+        self.netR_4 = nn.Sequential(
+            # B*131*sample_num_level2*knn_K
+            nn.Conv2d(3+nstates_plus_1[2], nstates_plus_2[0], kernel_size=(1, 1)),
+            nn.BatchNorm2d(nstates_plus_2[0]),
+            nn.ReLU(inplace=True),
+            # B*128*sample_num_level2*knn_K
+            nn.Conv2d(nstates_plus_2[0], nstates_plus_2[1], kernel_size=(1, 1)),
+            nn.BatchNorm2d(nstates_plus_2[1]),
+            nn.ReLU(inplace=True),
+            # B*128*sample_num_level2*knn_K
+            nn.Conv2d(nstates_plus_2[1], nstates_plus_2[2], kernel_size=(1, 1)),
+            nn.BatchNorm2d(nstates_plus_2[2]),
+            nn.ReLU(inplace=True),
+            # B*256*sample_num_level2*knn_K
+            nn.MaxPool2d((1,self.knn_K),stride=1)
+            # B*256*sample_num_level2*1
+        )
         
         self.netR_3 = nn.Sequential(
             # B*259*sample_num_level2*1
@@ -167,7 +185,7 @@ class PointUNetObj(nn.Module):
         inputs_level2_center_, inputs_level2_ = sample_and_group(128, self.ball_radius2, self.knn_K, y_, x_)
         inputs_level2_ = inputs_level2_.permute(0, 3, 1, 2)
         inputs_level2_center_ = inputs_level2_center_.permute(0, 2, 1).unsqueeze_(3)
-        x_ = self.netR_2(inputs_level2_)
+        x_ = self.netR_4(inputs_level2_)
         x_ = torch.cat((inputs_level2_center_, x_), 1)
 
         y_pool, x_pool = self.pool(y, x)
