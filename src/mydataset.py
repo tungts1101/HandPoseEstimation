@@ -20,10 +20,11 @@ test_subjects_small = ["Subject_2"]
 
 obj_contained_action = ['close_juice_bottle', 'close_liquid_soap', 'close_milk', 'open_juice_bottle', 'open_liquid_soap', 
 'open_milk', 'pour_juice_bottle', 'pour_liquid_soap', 'pour_milk', 'put_salt']
+# obj_contained_action = ['put_salt']
 test_seq = ['3']
 
 class DatasetObj(torch.utils.data.Dataset):
-    def __init__(self, is_train=True, is_full=True, device='cpu', is_obj=False, subject='',action='',seq=''):
+    def __init__(self, is_train=True, is_full=True, device='cpu', is_obj=False, subject='',action=''):
         #self.root_path = root_path
         self.is_train = is_train
         self.is_obj = is_obj
@@ -47,7 +48,6 @@ class DatasetObj(torch.utils.data.Dataset):
         if not self.is_train:
             self.subject_names = [subject] if subject != '' else self.subject_names
             self.gesture_names = [action] if action != '' else self.gesture_names
-            self.seq = None if seq == '' else seq
         
         print("Subjects: {}\nTest subjects: {}\nGestures: {}\n".format(
             self.subject_names, self.test_subjects, self.gesture_names))
@@ -116,7 +116,6 @@ class DatasetObj(torch.utils.data.Dataset):
                     for i_seq in test_seq:
                         try:
                             if not os.path.exists(os.path.join(gesture_folder, i_seq)): continue
-                            if self.seq != None and i_seq != self.seq: continue
                             if not i_seq.isnumeric(): continue
                             if self.is_obj and not os.path.exists(os.path.join(gesture_folder, i_seq, 'obj_xyz.npy')): continue
                             self.__load_data_dir(os.path.join(gesture_folder, i_seq))
