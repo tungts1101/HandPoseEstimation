@@ -116,7 +116,7 @@ for epoch in range(args.epoch):
             #     torch.bmm(torch.cat((gt_xyz, obj_xyz.reshape(-1, 24)), dim=1).reshape(-1, 29, 3) * obb_len, volume_rotate)
             # )
 
-            loss = criterion(estimation, torch.cat((gt_xyz, obj_xyz.reshape(-1, 24)), dim=1).reshape(-1, 29, 3)) * 1000
+            loss = criterion(estimation, torch.cat((gt_xyz, obj_xyz.reshape(-1, 24)), dim=1)) * 1000
 
             # loss = 0.8 * criterion(
             #     torch.bmm(estimation[:, :63].reshape(-1, 21, 3) * obb_len, volume_rotate),
@@ -191,7 +191,7 @@ for epoch in range(args.epoch):
             #     torch.bmm(torch.cat((gt_xyz, obj_xyz.reshape(-1, 24)), dim=1).reshape(-1, 29, 3) * obb_len, volume_rotate)
             # )
 
-            loss = criterion(estimation, torch.cat((gt_xyz, obj_xyz.reshape(-1, 24)), dim=1).reshape(-1, 29, 3)) * 1000
+            loss = criterion(estimation, torch.cat((gt_xyz, obj_xyz.reshape(-1, 24)), dim=1)) * 1000
 
             # loss = 0.8 * criterion(
             #     torch.bmm(estimation[:, :63].reshape(-1, 21, 3) * obb_len, volume_rotate),
