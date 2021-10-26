@@ -93,9 +93,8 @@ for epoch in range(args.epoch):
         points, gt_pca, gt_xyz, volume_rotate, bound_obb, obj_xyz = data
 
         ## compute output
+        obb_center = (bound_obb[:, :1, :] + bound_obb[:, 1:, :]) / 2
         obb_len = torch.diff(bound_obb, dim=1)
-        min_bound = bound_obb[:,:1,:]
-        obb_center = min_bound + obb_len / 2
 
         estimation = None
         if isinstance(network, NetworkObj):
@@ -113,23 +112,21 @@ for epoch in range(args.epoch):
             # loss = (0.8 * criterion(estimation[:, :63], gt_xyz) + 0.2 * criterion(estimation[:, 63:], obj_xyz.reshape(-1, 24))) * 1000
 
             # loss = criterion(
-            #     torch.bmm(estimation.reshape(-1, 29, 3) * obb_len, volume_rotate),
-            #     torch.bmm(torch.cat((gt_xyz, obj_xyz.reshape(-1, 24)), dim=1).reshape(-1, 29, 3) * obb_len, volume_rotate)
+            #     estimation.reshape(-1, 29, 3) * obb_len,
+            #     torch.cat((gt_xyz, obj_xyz.reshape(-1, 24)), dim=1).reshape(-1, 29, 3) * obb_len
             # )
 
-            obb_center_repeat = obb_center.squeeze_(1).repeat((1, 29))
+            # es_points = estimation.reshape(-1, 29, 3)
+            # max_es_bound_obb = torch.max(es_points, 1).values
+            # min_es_bound_obb = torch.min(es_points, 1).values
+            # es_obb_center = (max_es_bound_obb + min_es_bound_obb) / 2
 
-            loss = (0.8 * criterion(estimation, torch.cat((gt_xyz, obj_xyz.reshape(-1, 24)), dim=1)) + \
-                    0.2 * criterion(estimation, obb_center_repeat))
+            # loss = (0.9 * criterion(estimation, torch.cat((gt_xyz, obj_xyz.reshape(-1, 24)), dim=1)) + \
+            #         0.1 * criterion(es_obb_center, obb_center))
 
-            # loss = 0.8 * criterion(
-            #     torch.bmm(estimation[:, :63].reshape(-1, 21, 3) * obb_len, volume_rotate),
-            #     torch.bmm(gt_xyz.reshape(-1, 21, 3) * obb_len, volume_rotate)
-            # ) + 0.2 * criterion(
-            #     torch.bmm(estimation[:, 63:].reshape(-1, 8, 3) * obb_len, volume_rotate),
-            #     torch.bmm(obj_xyz.reshape(-1, 8, 3) * obb_len, volume_rotate)
-            # )
-        
+            loss = 0.9 * criterion(estimation[:, :63].reshape(-1, 21, 3) * obb_len, gt_xyz.reshape(-1, 21, 3) * obb_len) + \
+                0.1 * criterion(estimation[:, 63:].reshape(-1, 8, 3) * obb_len, obj_xyz.reshape(-1, 8, 3) * obb_len)
+
         # compute gradient
         optimizer.zero_grad()
         loss.backward()
@@ -138,18 +135,20 @@ for epoch in range(args.epoch):
         ## update error
         train_mse = train_mse + loss.item()
 
-        es_xyz_wld = torch.bmm(estimation.data[:, :63].reshape(-1, 21, 3) * obb_len + min_bound, volume_rotate)
-        gt_xyz_wld = torch.bmm(gt_xyz.reshape(-1, 21, 3) * obb_len + min_bound, volume_rotate)
-        train_mse_wld = train_mse_wld + criterion(es_xyz_wld, gt_xyz_wld)
+        # obb_len = torch.diff(bound_obb, dim=1)
+        # min_bound = bound_obb[:,:1,:]
+        # es_xyz_wld = torch.bmm(estimation.data[:, :63].reshape(-1, 21, 3) * obb_len + min_bound, volume_rotate)
+        # gt_xyz_wld = torch.bmm(gt_xyz.reshape(-1, 21, 3) * obb_len + min_bound, volume_rotate)
+        # train_mse_wld = train_mse_wld + criterion(es_xyz_wld, gt_xyz_wld)
     
     scheduler.step()
     
     logging.info("Time training: {} s".format(time.time() - timer))
     train_mse = train_mse / len(train_dataset)
     logging.info("MSE 1 sample: {} mm".format(train_mse))
-    train_mse_wld = train_mse_wld / len(train_dataset)
-    logging.info("Train error 1 sample in world space: {} mm".format(train_mse_wld))
-    # logging.info("Epoch: {}, train error: {} mm".format(epoch, train_mse_wld))
+    # train_mse_wld = train_mse_wld / len(train_dataset)
+    # logging.info("Train error 1 sample in world space: {} mm".format(train_mse_wld))
+    logging.info("Epoch: {}, train error: {} mm".format(epoch, train_mse))
 
     if best_err > train_mse:
         best_err = train_mse
@@ -164,9 +163,6 @@ for epoch in range(args.epoch):
 
     # for i, data in enumerate(tqdm(test_dataloader, 0)):
     #     points, gt_pca, gt_xyz, volume_rotate, bound_obb, obj_xyz = data
-
-    #     obb_len = torch.diff(bound_obb, dim=1)
-    #     min_bound = bound_obb[:,:1,:]
 
     #     ## compute output
     #     if isinstance(network, NetworkObj):
