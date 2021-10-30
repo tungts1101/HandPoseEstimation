@@ -128,6 +128,9 @@ for fold, (train_ids, test_ids) in enumerate(kfold.split(dataset)):
 
     best_err = float("inf")
     for epoch in range(int(args.epochs[fold]), args.epoch + 1):
+        logging.info("Epoch: {}".format(epoch))
+        logging.info("====================")
+        
         ## training
         timer = time.time()
         train_mse = 0.0
