@@ -161,9 +161,9 @@ class PointUNetObj(nn.Module):
             nn.BatchNorm1d(nstates_plus_3[3]),
             nn.ReLU(inplace=True),
             # B*1024
-            # nn.Linear(nstates_plus_3[3], nstates_plus_3[4]),
-            # nn.BatchNorm1d(nstates_plus_3[4]),
-            # nn.ReLU(inplace=True),
+            nn.Linear(nstates_plus_3[3], nstates_plus_3[4]),
+            nn.BatchNorm1d(nstates_plus_3[4]),
+            nn.ReLU(inplace=True),
             # B*512
             nn.Linear(nstates_plus_3[4], self.num_outputs),
             # B*num_outputs
