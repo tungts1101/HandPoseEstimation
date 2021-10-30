@@ -101,6 +101,7 @@ scheduler = lr_scheduler.StepLR(optimizer, step_size=50, gamma=0.1)
 logging.info("================================================================================\n")
 
 results = {}
+global_best_err = float("inf")
 
 for fold, (train_ids, test_ids) in enumerate(kfold.split(dataset)):
     logging.info("Fold: {}".format(fold))
@@ -171,9 +172,15 @@ for fold, (train_ids, test_ids) in enumerate(kfold.split(dataset)):
 
         if best_err > train_mse:
             best_err = train_mse
-            logging.info("Save best with error: {} mm".format(best_err))
-            torch.save(network.state_dict(), os.path.join(save_dir, "network_best.pth".format(epoch)))
-            torch.save(optimizer.state_dict(), os.path.join(save_dir, "optimizer_best.pth".format(epoch)))
+            logging.info("Save best error: {} mm".format(best_err))
+            torch.save(network.state_dict(), os.path.join(save_dir, "network_best_fold_{}.pth".format(fold)))
+            torch.save(optimizer.state_dict(), os.path.join(save_dir, "optimizer_best_fold_{}.pth".format(fold)))
+        
+        if global_best_err > best_err:
+            global_best_err = best_err
+            logging.info("Save global best error: {} mm".format(global_best_err))
+            torch.save(network.state_dict(), os.path.join(save_dir, "network_best.pth"))
+            torch.save(optimizer.state_dict(), os.path.join(save_dir, "optimizer_best.pth"))
 
     ## testing
     timer = time.time()
