@@ -88,10 +88,10 @@ class PointUNetObj(nn.Module):
             nn.Conv2d(self.INPUT_FEATURE_NUM, nstates_plus_1[0], kernel_size=(1, 1)),
             nn.BatchNorm2d(nstates_plus_1[0]),
             nn.ReLU(inplace=True),
-            # B*64*sample_num_level1*knn_K
-            nn.Conv2d(nstates_plus_1[0], nstates_plus_1[1], kernel_size=(1, 1)),
-            nn.BatchNorm2d(nstates_plus_1[1]),
-            nn.ReLU(inplace=True),
+            # # B*64*sample_num_level1*knn_K
+            # nn.Conv2d(nstates_plus_1[0], nstates_plus_1[1], kernel_size=(1, 1)),
+            # nn.BatchNorm2d(nstates_plus_1[1]),
+            # nn.ReLU(inplace=True),
             # B*64*sample_num_level1*knn_K
             nn.Conv2d(nstates_plus_1[1], nstates_plus_1[2], kernel_size=(1, 1)),
             nn.BatchNorm2d(nstates_plus_1[2]),
@@ -106,10 +106,10 @@ class PointUNetObj(nn.Module):
             nn.Conv2d(3+nstates_plus_1[2], nstates_plus_2[0], kernel_size=(1, 1)),
             nn.BatchNorm2d(nstates_plus_2[0]),
             nn.ReLU(inplace=True),
-            # B*128*sample_num_level2*knn_K
-            nn.Conv2d(nstates_plus_2[0], nstates_plus_2[1], kernel_size=(1, 1)),
-            nn.BatchNorm2d(nstates_plus_2[1]),
-            nn.ReLU(inplace=True),
+            # # B*128*sample_num_level2*knn_K
+            # nn.Conv2d(nstates_plus_2[0], nstates_plus_2[1], kernel_size=(1, 1)),
+            # nn.BatchNorm2d(nstates_plus_2[1]),
+            # nn.ReLU(inplace=True),
             # B*128*sample_num_level2*knn_K
             nn.Conv2d(nstates_plus_2[1], nstates_plus_2[2], kernel_size=(1, 1)),
             nn.BatchNorm2d(nstates_plus_2[2]),
@@ -124,10 +124,10 @@ class PointUNetObj(nn.Module):
             nn.Conv2d(3+nstates_plus_1[2], nstates_plus_2[0], kernel_size=(1, 1)),
             nn.BatchNorm2d(nstates_plus_2[0]),
             nn.ReLU(inplace=True),
-            # B*128*sample_num_level2*knn_K
-            nn.Conv2d(nstates_plus_2[0], nstates_plus_2[1], kernel_size=(1, 1)),
-            nn.BatchNorm2d(nstates_plus_2[1]),
-            nn.ReLU(inplace=True),
+            # # B*128*sample_num_level2*knn_K
+            # nn.Conv2d(nstates_plus_2[0], nstates_plus_2[1], kernel_size=(1, 1)),
+            # nn.BatchNorm2d(nstates_plus_2[1]),
+            # nn.ReLU(inplace=True),
             # B*128*sample_num_level2*knn_K
             nn.Conv2d(nstates_plus_2[1], nstates_plus_2[2], kernel_size=(1, 1)),
             nn.BatchNorm2d(nstates_plus_2[2]),
@@ -156,10 +156,10 @@ class PointUNetObj(nn.Module):
         )
         
         self.netR_FC = nn.Sequential(
-            # B*1024
-            nn.Linear(nstates_plus_3[2], nstates_plus_3[3]),
-            nn.BatchNorm1d(nstates_plus_3[3]),
-            nn.ReLU(inplace=True),
+            # # B*1024
+            # nn.Linear(nstates_plus_3[2], nstates_plus_3[3]),
+            # nn.BatchNorm1d(nstates_plus_3[3]),
+            # nn.ReLU(inplace=True),
             # B*1024
             nn.Linear(nstates_plus_3[3], nstates_plus_3[4]),
             nn.BatchNorm1d(nstates_plus_3[4]),
