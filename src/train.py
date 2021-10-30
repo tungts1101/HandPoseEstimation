@@ -116,8 +116,13 @@ for fold, (train_ids, test_ids) in enumerate(kfold.split(dataset)):
 
     network.apply(reset_weights)
     if args.weight != None:
-        network.load_state_dict(torch.load(os.path.join(args.weight, 'network_best.pth')))
-        optimizer.load_state_dict(torch.load(os.path.join(args.weight, 'optimizer_best.pth')))
+        if os.path.exists(os.path.join(args.weight, "network_best_fold_{}.pth".format(fold))) and \
+            os.path.exists(os.path.join(args.weight, "optimizer_best_fold_{}.pth".format(fold))):
+            network.load_state_dict(torch.load(os.path.join(args.weight, "network_best_fold_{}.pth".format(fold))))
+            optimizer.load_state_dict(torch.load(os.path.join(args.weight, "optimizer_best_fold_{}.pth".format(fold))))
+        else:
+            network.load_state_dict(torch.load(os.path.join(args.weight, 'network_best.pth')))
+            optimizer.load_state_dict(torch.load(os.path.join(args.weight, 'optimizer_best.pth')))
 
     best_err = float("inf")
     for epoch in range(args.epoch):
