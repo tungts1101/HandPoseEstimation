@@ -33,7 +33,7 @@ parser.add_argument('--epoch', '-e', type=int, default=50)
 parser.add_argument('--weight', '-w', type=str, help="Weight folder")
 parser.add_argument('--fold', '-f', type=int, default=5, help="Number of folds")
 
-parser.add_argument('--epochs', '-eps', nargs='+', help='<Required> Set flag', default=[1, 1, 1, 1, 1])
+parser.add_argument('--epochs', '-eps', nargs='*', help='<Required> Set flag', default=[1, 1, 1, 1, 1])
 
 parser.add_argument('--device', '-d', type=str, default='cpu')
 args = parser.parse_args()
@@ -127,7 +127,7 @@ for fold, (train_ids, test_ids) in enumerate(kfold.split(dataset)):
             optimizer.load_state_dict(torch.load(os.path.join(args.weight, 'optimizer_best.pth')))
 
     best_err = float("inf")
-    for epoch in range(args.epochs[fold], args.epoch + 1):
+    for epoch in range(int(args.epochs[fold]), args.epoch + 1):
         ## training
         timer = time.time()
         train_mse = 0.0
