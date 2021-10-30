@@ -29,6 +29,7 @@ parser.add_argument('--ball_radius', type=float, default=0.015, help='square of 
 parser.add_argument('--ball_radius2', type=float, default=0.04, help='square of radius for ball query in level 2')
 parser.add_argument('--lr', type=float, default=0.001)
 parser.add_argument('--epoch', '-e', type=int, default=50)
+parser.add_argument('--weight', '-w', type=str, help="Weight folder")
 
 parser.add_argument('--device', '-d', type=str, default='cpu')
 args = parser.parse_args()
@@ -57,11 +58,11 @@ random.seed(args.seed)
 train_dataset = DatasetObj(is_train=True, is_full=args.is_full, is_obj=True, device=device)
 train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True)
 
-test_dataset = DatasetObj(is_train=False, is_full=args.is_full, is_obj=True, device=device)
-test_dataloader = torch.utils.data.DataLoader(test_dataset, batch_size=args.batch_size, shuffle=True)
+# test_dataset = DatasetObj(is_train=False, is_full=args.is_full, is_obj=True, device=device)
+# test_dataloader = torch.utils.data.DataLoader(test_dataset, batch_size=args.batch_size, shuffle=True)
 
-logging.info("Train data: {}, Test data: {}".format(len(train_dataset), len(test_dataset)))
-# logging.info("Train data: {}".format(len(train_dataset)))
+# logging.info("Train data: {}, Test data: {}".format(len(train_dataset), len(test_dataset)))
+logging.info("Train data: {}".format(len(train_dataset)))
 
 ### load model
 network = None
@@ -81,6 +82,10 @@ criterion = torch.nn.MSELoss(size_average=True).to(device)
 optimizer = torch.optim.Adam(network.parameters(), lr=args.lr, betas = (0.9, 0.999), eps=1e-05)
 scheduler = lr_scheduler.StepLR(optimizer, step_size=50, gamma=0.1)
 logging.info("================================================================================\n")
+
+if args.weight != None:
+    network.load_state_dict(os.path.join(args.weight, 'network_best.pth'))
+    optimizer.load_state_dict(os.path.join(args.weight, 'optimizer_best.pth'))
 
 best_err = float("inf")
 for epoch in range(args.epoch):
