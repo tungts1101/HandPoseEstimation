@@ -33,6 +33,8 @@ parser.add_argument('--epoch', '-e', type=int, default=50)
 parser.add_argument('--weight', '-w', type=str, help="Weight folder")
 parser.add_argument('--fold', '-f', type=int, default=5, help="Number of folds")
 
+parser.add_argument('--epochs', '-eps', nargs='+', help='<Required> Set flag', default=[1, 1, 1, 1, 1])
+
 parser.add_argument('--device', '-d', type=str, default='cpu')
 args = parser.parse_args()
 
@@ -97,7 +99,7 @@ logging.info(network)
 
 criterion = torch.nn.MSELoss(size_average=True).to(device)
 optimizer = torch.optim.Adam(network.parameters(), lr=args.lr, betas = (0.9, 0.999), eps=1e-05)
-scheduler = lr_scheduler.StepLR(optimizer, step_size=50, gamma=0.1)
+scheduler = lr_scheduler.StepLR(optimizer, step_size=20, gamma=0.1)
 logging.info("================================================================================\n")
 
 results = {}
@@ -125,7 +127,7 @@ for fold, (train_ids, test_ids) in enumerate(kfold.split(dataset)):
             optimizer.load_state_dict(torch.load(os.path.join(args.weight, 'optimizer_best.pth')))
 
     best_err = float("inf")
-    for epoch in range(args.epoch):
+    for epoch in range(args.epochs[fold], args.epoch + 1):
         ## training
         timer = time.time()
         train_mse = 0.0
