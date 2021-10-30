@@ -84,8 +84,8 @@ scheduler = lr_scheduler.StepLR(optimizer, step_size=50, gamma=0.1)
 logging.info("================================================================================\n")
 
 if args.weight != None:
-    network.load_state_dict(os.path.join(args.weight, 'network_best.pth'))
-    optimizer.load_state_dict(os.path.join(args.weight, 'optimizer_best.pth'))
+    network.load_state_dict(torch.load(os.path.join(args.weight, 'network_best.pth')))
+    optimizer.load_state_dict(torch.load(os.path.join(args.weight, 'optimizer_best.pth')))
 
 best_err = float("inf")
 for epoch in range(args.epoch):
