@@ -245,6 +245,7 @@ logging.info("K-Fold cross validation resuls for {} folds".format(k_folds))
 sum_test_err = 0.0
 for key, val in results.items():
     logging.info("Fold {}: {}".format(key, val))
-    sum_test_err = val["test_err"]
+    sum_test_err += val["test_err"]
 
-logging.info("Average: {}".format(sum_test_err/len(results.items())))
+logging.info("Average: {}".format(sum_test_err/k_folds))
+logging.info("Global best error: {}".format(global_best_err))
