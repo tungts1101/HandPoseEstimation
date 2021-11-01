@@ -153,9 +153,9 @@ for fold, (train_ids, test_ids) in enumerate(kfold.split(dataset)):
                 loss = 0.25 * criterion(estimation_stage_1, gt_pca) + 0.25 * criterion(estimation_stage_2, gt_pca) + 0.5 * criterion(estimation, gt_pca)
             else:
                 obb_len = torch.diff(bound_obb, dim=1)
-                # loss = criterion(estimation, torch.cat((gt_xyz, obj_xyz.reshape(-1, 24)), dim=1)) * 1000
-                loss = 0.9 * criterion(estimation[:, :63].reshape(-1, 21, 3) * obb_len, gt_xyz.reshape(-1, 21, 3) * obb_len) + \
-                    0.1 * criterion(estimation[:, 63:].reshape(-1, 8, 3) * obb_len, obj_xyz.reshape(-1, 8, 3) * obb_len)
+                loss = criterion(estimation, torch.cat((gt_xyz, obj_xyz.reshape(-1, 24)), dim=1)) * 1000
+                # loss = 0.9 * criterion(estimation[:, :63].reshape(-1, 21, 3) * obb_len, gt_xyz.reshape(-1, 21, 3) * obb_len) + \
+                #     0.1 * criterion(estimation[:, 63:].reshape(-1, 8, 3) * obb_len, obj_xyz.reshape(-1, 8, 3) * obb_len)
 
             # compute gradient
             optimizer.zero_grad()
@@ -215,9 +215,9 @@ for fold, (train_ids, test_ids) in enumerate(kfold.split(dataset)):
                 eval_loss = 0.25 * criterion(estimation_stage_1, gt_pca) + 0.25 * criterion(estimation_stage_2, gt_pca) + 0.5 * criterion(estimation, gt_pca)
             else:
                 obb_len = torch.diff(bound_obb, dim=1)
-                # loss = criterion(estimation, torch.cat((gt_xyz, obj_xyz.reshape(-1, 24)), dim=1)) * 1000
-                eval_loss = 0.9 * criterion(estimation[:, :63].reshape(-1, 21, 3) * obb_len, gt_xyz.reshape(-1, 21, 3) * obb_len) + \
-                    0.1 * criterion(estimation[:, 63:].reshape(-1, 8, 3) * obb_len, obj_xyz.reshape(-1, 8, 3) * obb_len)
+                loss = criterion(estimation, torch.cat((gt_xyz, obj_xyz.reshape(-1, 24)), dim=1)) * 1000
+                # eval_loss = 0.9 * criterion(estimation[:, :63].reshape(-1, 21, 3) * obb_len, gt_xyz.reshape(-1, 21, 3) * obb_len) + \
+                #     0.1 * criterion(estimation[:, 63:].reshape(-1, 8, 3) * obb_len, obj_xyz.reshape(-1, 8, 3) * obb_len)
 
             ## update error
             test_mse = test_mse + eval_loss.item()
