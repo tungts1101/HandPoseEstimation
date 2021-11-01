@@ -118,13 +118,15 @@ for fold, (train_ids, test_ids) in enumerate(kfold.split(dataset)):
 
     network.apply(reset_weights)
     if args.weight != None:
-        if os.path.exists(os.path.join(args.weight, "network_best_fold_{}.pth".format(fold))) and \
-            os.path.exists(os.path.join(args.weight, "optimizer_best_fold_{}.pth".format(fold))):
-            network.load_state_dict(torch.load(os.path.join(args.weight, "network_best_fold_{}.pth".format(fold))))
-            optimizer.load_state_dict(torch.load(os.path.join(args.weight, "optimizer_best_fold_{}.pth".format(fold))))
+        if os.path.exists(os.path.join(args.weight, "network_fold_{}_last.pth".format(fold))) and \
+            os.path.exists(os.path.join(args.weight, "optimizer_fold_{}_last.pth".format(fold))):
+            network.load_state_dict(torch.load(os.path.join(args.weight, "network_fold_{}_last.pth".format(fold))))
+            optimizer.load_state_dict(torch.load(os.path.join(args.weight, "optimizer_fold_{}_last.pth".format(fold))))
         else:
-            network.load_state_dict(torch.load(os.path.join(args.weight, 'network_best.pth')))
-            optimizer.load_state_dict(torch.load(os.path.join(args.weight, 'optimizer_best.pth')))
+            if os.path.exists(os.path.join(args.weight, "network_best.pth")) and \
+                os.path.exists(os.path.join(args.weight, 'optimizer_best.pth')):
+                network.load_state_dict(torch.load(os.path.join(args.weight, 'network_best.pth')))
+                optimizer.load_state_dict(torch.load(os.path.join(args.weight, 'optimizer_best.pth')))
 
     best_err = float("inf")
     for epoch in range(int(args.epochs[fold]), args.epoch + 1):
@@ -153,9 +155,9 @@ for fold, (train_ids, test_ids) in enumerate(kfold.split(dataset)):
                 loss = 0.25 * criterion(estimation_stage_1, gt_pca) + 0.25 * criterion(estimation_stage_2, gt_pca) + 0.5 * criterion(estimation, gt_pca)
             else:
                 obb_len = torch.diff(bound_obb, dim=1)
-                # loss = criterion(estimation, torch.cat((gt_xyz, obj_xyz.reshape(-1, 24)), dim=1)) * 1000
-                loss = 0.9 * criterion(estimation[:, :63].reshape(-1, 21, 3) * obb_len, gt_xyz.reshape(-1, 21, 3) * obb_len) + \
-                    0.1 * criterion(estimation[:, 63:].reshape(-1, 8, 3) * obb_len, obj_xyz.reshape(-1, 8, 3) * obb_len)
+                loss = criterion(estimation, torch.cat((gt_xyz, obj_xyz.reshape(-1, 24)), dim=1)) * 1000
+                # loss = 0.9 * criterion(estimation[:, :63].reshape(-1, 21, 3) * obb_len, gt_xyz.reshape(-1, 21, 3) * obb_len) + \
+                #     0.1 * criterion(estimation[:, 63:].reshape(-1, 8, 3) * obb_len, obj_xyz.reshape(-1, 8, 3) * obb_len)
 
             # compute gradient
             optimizer.zero_grad()
@@ -191,6 +193,9 @@ for fold, (train_ids, test_ids) in enumerate(kfold.split(dataset)):
             logging.info("Save global best error: {} mm".format(global_best_err))
             torch.save(network.state_dict(), os.path.join(save_dir, "network_best.pth"))
             torch.save(optimizer.state_dict(), os.path.join(save_dir, "optimizer_best.pth"))
+        
+        torch.save(network.state_dict(), os.path.join(save_dir, "network_fold_{}_last.pth".format(fold)))
+        torch.save(optimizer.state_dict(), os.path.join(save_dir, "optimizer_fold_{}_last.pth".format(fold)))
 
     ## testing
     timer = time.time()
@@ -215,9 +220,9 @@ for fold, (train_ids, test_ids) in enumerate(kfold.split(dataset)):
                 eval_loss = 0.25 * criterion(estimation_stage_1, gt_pca) + 0.25 * criterion(estimation_stage_2, gt_pca) + 0.5 * criterion(estimation, gt_pca)
             else:
                 obb_len = torch.diff(bound_obb, dim=1)
-                # eval_loss = criterion(estimation, torch.cat((gt_xyz, obj_xyz.reshape(-1, 24)), dim=1)) * 1000
-                eval_loss = 0.9 * criterion(estimation[:, :63].reshape(-1, 21, 3) * obb_len, gt_xyz.reshape(-1, 21, 3) * obb_len) + \
-                    0.1 * criterion(estimation[:, 63:].reshape(-1, 8, 3) * obb_len, obj_xyz.reshape(-1, 8, 3) * obb_len)
+                eval_loss = criterion(estimation, torch.cat((gt_xyz, obj_xyz.reshape(-1, 24)), dim=1)) * 1000
+                # eval_loss = 0.9 * criterion(estimation[:, :63].reshape(-1, 21, 3) * obb_len, gt_xyz.reshape(-1, 21, 3) * obb_len) + \
+                #     0.1 * criterion(estimation[:, 63:].reshape(-1, 8, 3) * obb_len, obj_xyz.reshape(-1, 8, 3) * obb_len)
 
             ## update error
             test_mse = test_mse + eval_loss.item()
