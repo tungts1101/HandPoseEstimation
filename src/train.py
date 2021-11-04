@@ -36,6 +36,7 @@ parser.add_argument('--epoch', '-e', type=int, default=50)
 parser.add_argument('--weight', '-w', type=str, help="Weight folder")
 parser.add_argument('--fold', '-f', type=int, default=5, help="Number of folds")
 parser.add_argument('--dataset_folder', '-ds', type=str, default="processed")
+parser.add_argument('--contain_obj', '-co', type=bool, default=False)
 
 parser.add_argument('--device', '-d', type=str, default='cpu')
 args = parser.parse_args()
@@ -127,7 +128,7 @@ network = None
 if args.model == 1:
     network = NetworkObj()
 elif args.model == 2:
-    network = PointNet_Plus(args.ball_radius2)
+    network = PointNet_Plus(args.ball_radius2, args.contain_obj)
 elif args.model == 3:
     network = CascadedNetworkObj()
 elif args.model == 4:
@@ -146,8 +147,9 @@ results = {}
 global_best_err = float(cur_state["-1"]['global_best_err'])
 
 for fold, (train_ids, test_ids) in enumerate(kfold.split(dataset)):
-    logging.info("Fold: {}".format(fold))
-    logging.info("====================")
+    if int(cur_state[str(fold)]['epoch']) < args.epoch + 1:
+        logging.info("Fold: {}".format(fold))
+        logging.info("====================")
 
     # Sample elements randomly from a given list of ids, no replacement.
     train_subsampler = torch.utils.data.SubsetRandomSampler(train_ids)
@@ -194,8 +196,12 @@ for fold, (train_ids, test_ids) in enumerate(kfold.split(dataset)):
             if isinstance(network, CascadedNetworkObj):
                 loss = 0.25 * criterion(estimation_stage_1, gt_pca) + 0.25 * criterion(estimation_stage_2, gt_pca) + 0.5 * criterion(estimation, gt_pca)
             else:
-                obb_len = torch.diff(bound_obb, dim=1)
-                loss = criterion(estimation, torch.cat((gt_xyz, obj_xyz.reshape(-1, 24)), dim=1)) * 1000
+                if args.contain_obj:
+                    loss = criterion(estimation, torch.cat((gt_xyz, obj_xyz.reshape(-1, 24)), dim=1)) * 1000
+                else:
+                    loss = criterion(estimation, gt_xyz) * 1000
+
+                # obb_len = torch.diff(bound_obb, dim=1)
                 # loss = 0.9 * criterion(estimation[:, :63].reshape(-1, 21, 3) * obb_len, gt_xyz.reshape(-1, 21, 3) * obb_len) + \
                 #     0.1 * criterion(estimation[:, 63:].reshape(-1, 8, 3) * obb_len, obj_xyz.reshape(-1, 8, 3) * obb_len)
 
@@ -269,8 +275,12 @@ for fold, (train_ids, test_ids) in enumerate(kfold.split(dataset)):
                     if isinstance(network, CascadedNetworkObj):
                         eval_loss = 0.25 * criterion(estimation_stage_1, gt_pca) + 0.25 * criterion(estimation_stage_2, gt_pca) + 0.5 * criterion(estimation, gt_pca)
                     else:
-                        obb_len = torch.diff(bound_obb, dim=1)
-                        eval_loss = criterion(estimation, torch.cat((gt_xyz, obj_xyz.reshape(-1, 24)), dim=1)) * 1000
+                        if args.contain_obj:
+                            eval_loss = criterion(estimation, torch.cat((gt_xyz, obj_xyz.reshape(-1, 24)), dim=1)) * 1000
+                        else:
+                            eval_loss = criterion(estimation, gt_xyz) * 1000
+
+                        # obb_len = torch.diff(bound_obb, dim=1)
                         # eval_loss = 0.9 * criterion(estimation[:, :63].reshape(-1, 21, 3) * obb_len, gt_xyz.reshape(-1, 21, 3) * obb_len) + \
                         #     0.1 * criterion(estimation[:, 63:].reshape(-1, 8, 3) * obb_len, obj_xyz.reshape(-1, 8, 3) * obb_len)
 
