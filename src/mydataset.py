@@ -24,10 +24,11 @@ obj_contained_action = ['close_juice_bottle', 'close_liquid_soap', 'close_milk',
 test_seq = ['3']
 
 class DatasetObj(torch.utils.data.Dataset):
-    def __init__(self, is_train=True, is_full=True, device='cpu', is_obj=False, subject='',action=''):
+    def __init__(self, is_train=True, is_full=True, device='cpu', is_obj=False, subject='',action='', dataset_folder='processed'):
         #self.root_path = root_path
         self.is_train = is_train
         self.is_obj = is_obj
+        self.__dataset_folder = dataset_folder
 
         self.start_idx = 0
         self.end_idx = 0
@@ -96,7 +97,7 @@ class DatasetObj(torch.utils.data.Dataset):
             for i_subject in self.subject_names:
                 #if i_subject in self.test_subjects: continue
                 for i_gesture in self.gesture_names:
-                    gesture_folder = os.path.join('..', 'processed', i_subject, i_gesture)
+                    gesture_folder = os.path.join('..', self.__dataset_folder, i_subject, i_gesture)
                     if not os.path.exists(gesture_folder): continue
                     for i_seq in os.listdir(gesture_folder):
                         try:
@@ -110,7 +111,7 @@ class DatasetObj(torch.utils.data.Dataset):
             #for i_subject in self.test_subjects:
             for i_subject in self.subject_names:
                 for i_gesture in self.gesture_names:
-                    gesture_folder = os.path.join('..', 'processed', i_subject, i_gesture)
+                    gesture_folder = os.path.join('..', self.__dataset_folder, i_subject, i_gesture)
                     if not os.path.exists(gesture_folder): continue
                     #for i_seq in os.listdir(gesture_folder):
                     for i_seq in test_seq:
@@ -152,7 +153,7 @@ class DatasetObj(torch.utils.data.Dataset):
                 for i_gesture in self.gesture_names:
                     try:
                         #gesture_folder = os.path.join(self.root_path, 'Video_files', i_subject, i_gesture)
-                        gesture_folder = os.path.join('..', 'processed', i_subject, i_gesture)
+                        gesture_folder = os.path.join('..', self.__dataset_folder, i_subject, i_gesture)
                         if not os.path.exists(gesture_folder): continue
                         for i_seq in os.listdir(gesture_folder):
                             try:
@@ -176,7 +177,7 @@ class DatasetObj(torch.utils.data.Dataset):
                 for i_gesture in self.gesture_names:
                     try:
                         #gesture_folder = os.path.join(self.root_path, 'Video_files', i_subject, i_gesture)
-                        gesture_folder = os.path.join('..', 'processed', i_subject, i_gesture)
+                        gesture_folder = os.path.join('..', self.__dataset_folder, i_subject, i_gesture)
                         if not os.path.exists(gesture_folder): continue
                         for i_seq in test_seq:
                             try:
