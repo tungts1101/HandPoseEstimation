@@ -299,13 +299,15 @@ for fold, (train_ids, test_ids) in enumerate(kfold.split(dataset)):
             logging.info("Test error: {} mm".format(test_mse))
             # test_mse_wld = test_mse_wld / len(test_dataset)
             # logging.info("Test error in world space: {} mm".format(test_mse_wld))
-    
-    results[fold] = {
-        "train_best_err": best_err,
-        "test_err": test_mse
-    }
+    try:
+        results[fold] = {
+            "train_best_err": best_err,
+            "test_err": test_mse
+        }
 
-    logging.info("================================================================================\n")
+        logging.info("================================================================================\n")
+    except:
+        pass
 
 logging.info("K-Fold cross validation resuls for {} folds".format(k_folds))
 sum_test_err = 0.0
