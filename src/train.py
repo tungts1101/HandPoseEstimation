@@ -101,11 +101,11 @@ random.seed(args.seed)
 train_dataset = DatasetObj(is_train=True, is_full=args.is_full, is_obj=True, device=device, dataset_folder=args.dataset_folder)
 # train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True)
 
-# test_dataset = DatasetObj(is_train=False, is_full=args.is_full, is_obj=True, device=device, dataset_folder=args.dataset_folder)
+test_dataset = DatasetObj(is_train=False, is_full=args.is_full, is_obj=True, device=device, dataset_folder=args.dataset_folder)
 # test_dataloader = torch.utils.data.DataLoader(test_dataset, batch_size=args.batch_size, shuffle=True)
 
 k_folds = args.fold
-dataset = torch.utils.data.ConcatDataset([train_dataset])
+dataset = torch.utils.data.ConcatDataset([train_dataset, test_dataset])
 # Define the K-fold Cross Validator
 kfold = KFold(n_splits=k_folds, shuffle=True)
 
