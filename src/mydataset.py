@@ -21,7 +21,8 @@ test_subjects_small = ["Subject_2"]
 obj_contained_action = ['close_juice_bottle', 'close_liquid_soap', 'close_milk', 'open_juice_bottle', 'open_liquid_soap', 
 'open_milk', 'pour_juice_bottle', 'pour_liquid_soap', 'pour_milk', 'put_salt']
 # obj_contained_action = ['put_salt']
-test_seq = ['3']
+# test_seq = ['3']
+test_seq = []
 
 class DatasetObj(torch.utils.data.Dataset):
     def __init__(self, is_train=True, is_full=True, device='cpu', is_obj=False, subject='',action='', dataset_folder='processed'):
