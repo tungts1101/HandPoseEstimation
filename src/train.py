@@ -203,10 +203,11 @@ for fold, (train_ids, test_ids) in enumerate(kfold.split(dataset)):
                     # loss = 0.9 * criterion(estimation[:, :63].reshape(-1, 21, 3) * obb_len, gt_xyz.reshape(-1, 21, 3) * obb_len) + \
                     #     0.1 * criterion(estimation[:, 63:].reshape(-1, 8, 3) * obb_len, obj_xyz.reshape(-1, 8, 3) * obb_len)
 
-                    # loss = 0.9 * criterion(estimation[:, :63].reshape(-1, 21, 3) * 63, gt_xyz.reshape(-1, 21, 3) * 63) + \
-                    #     0.1 * criterion(estimation[:, 63:].reshape(-1, 8, 3) * 8, obj_xyz.reshape(-1, 8, 3) * 8)
+                    loss = 0.9 * criterion(estimation[:, :63].reshape(-1, 21, 3) * 63, gt_xyz.reshape(-1, 21, 3) * 63) + \
+                        0.1 * criterion(estimation[:, 63:].reshape(-1, 8, 3) * 8, obj_xyz.reshape(-1, 8, 3) * 8)
                 else:
-                    loss = criterion(estimation, gt_xyz) * 1000
+                    loss = criterion(estimation * 63, gt_xyz * 63)
+                    # loss = criterion(estimation, gt_xyz) * 1000
                     # loss = criterion(estimation * 100, gt_xyz * 100)
                     # loss = criterion(estimation[:, :63].reshape(-1, 21, 3) * obb_len, gt_xyz.reshape(-1, 21, 3) * obb_len)
 
@@ -286,15 +287,15 @@ for fold, (train_ids, test_ids) in enumerate(kfold.split(dataset)):
                     else:
                         obb_len = torch.diff(bound_obb, dim=1)
                         if args.contain_obj:
-                            eval_loss = criterion(estimation, torch.cat((gt_xyz, obj_xyz.reshape(-1, 24)), dim=1)) * 1000
+                            # eval_loss = criterion(estimation, torch.cat((gt_xyz, obj_xyz.reshape(-1, 24)), dim=1)) * 1000
                             # eval_loss = 0.9 * criterion(estimation[:, :63].reshape(-1, 21, 3) * obb_len, gt_xyz.reshape(-1, 21, 3) * obb_len) + \
                             #     0.1 * criterion(estimation[:, 63:].reshape(-1, 8, 3) * obb_len, obj_xyz.reshape(-1, 8, 3) * obb_len)
 
-                            # eval_loss = 0.9 * criterion(estimation[:, :63].reshape(-1, 21, 3) * 63, gt_xyz.reshape(-1, 21, 3) * 63) + \
-                            #     0.1 * criterion(estimation[:, 63:].reshape(-1, 8, 3) * 8, obj_xyz.reshape(-1, 8, 3) * 8)
+                            eval_loss = 0.9 * criterion(estimation[:, :63].reshape(-1, 21, 3) * 63, gt_xyz.reshape(-1, 21, 3) * 63) + \
+                                0.1 * criterion(estimation[:, 63:].reshape(-1, 8, 3) * 8, obj_xyz.reshape(-1, 8, 3) * 8)
                         else:
-                            eval_loss = criterion(estimation, gt_xyz) * 1000
-                            # eval_loss = criterion(estimation * 63, gt_xyz * 63)
+                            # eval_loss = criterion(estimation, gt_xyz) * 1000
+                            eval_loss = criterion(estimation * 63, gt_xyz * 63)
                             # eval_loss = criterion(estimation[:, :63].reshape(-1, 21, 3) * obb_len, gt_xyz.reshape(-1, 21, 3) * obb_len)
 
                         # obb_len = torch.diff(bound_obb, dim=1)
