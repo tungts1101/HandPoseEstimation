@@ -139,8 +139,6 @@ if not args.weight:
     logging.info(network)
 
 criterion = torch.nn.MSELoss(size_average=True).to(device)
-optimizer = torch.optim.Adam(network.parameters(), lr=args.lr, betas = (0.9, 0.999), eps=1e-05)
-scheduler = lr_scheduler.StepLR(optimizer, step_size=20, gamma=0.1)
 logging.info("================================================================================\n")
 
 results = {}
@@ -159,6 +157,9 @@ for fold, (train_ids, test_ids) in enumerate(kfold.split(dataset)):
     test_dataloader = torch.utils.data.DataLoader(dataset, batch_size=args.batch_size, sampler=test_subsampler)
 
     network.apply(reset_weights)
+    optimizer = torch.optim.Adam(network.parameters(), lr=args.lr, betas = (0.9, 0.999), eps=1e-05)
+    scheduler = lr_scheduler.StepLR(optimizer, step_size=20, gamma=0.1)
+
     if args.weight != None:
         if os.path.exists(os.path.join(args.weight, "network_fold_{}_last.pth".format(fold))) and \
             os.path.exists(os.path.join(args.weight, "optimizer_fold_{}_last.pth".format(fold))):
