@@ -91,7 +91,8 @@ with open(os.path.join(save_dir, 'resume.json'), "r") as _from:
     save_state = copy.deepcopy(cur_state)
 
 device = torch.device('cuda:0') if (torch.cuda.is_available() and args.device == 'cuda') else 'cpu'
-logging.info("Device: {}".format(device))
+if not args.weight:
+    logging.info("Device: {}".format(device))
 
 ### set seed
 torch.manual_seed(args.seed)
@@ -199,17 +200,18 @@ for fold, (train_ids, test_ids) in enumerate(kfold.split(dataset)):
             else:
                 obb_len = torch.diff(bound_obb, dim=1)
                 if args.contain_obj:
-                    loss = criterion(estimation, torch.cat((gt_xyz, obj_xyz.reshape(-1, 24)), dim=1)) * 1000
+                    # loss = criterion(estimation, torch.cat((gt_xyz, obj_xyz.reshape(-1, 24)), dim=1)) * 1000
                     # loss = 0.9 * criterion(estimation[:, :63].reshape(-1, 21, 3) * obb_len, gt_xyz.reshape(-1, 21, 3) * obb_len) + \
                     #     0.1 * criterion(estimation[:, 63:].reshape(-1, 8, 3) * obb_len, obj_xyz.reshape(-1, 8, 3) * obb_len)
 
                     loss = 0.9 * criterion(estimation[:, :63].reshape(-1, 21, 3) * 63, gt_xyz.reshape(-1, 21, 3) * 63) + \
                         0.1 * criterion(estimation[:, 63:].reshape(-1, 8, 3) * 8, obj_xyz.reshape(-1, 8, 3) * 8)
                 else:
-                    loss = criterion(estimation * 63, gt_xyz * 63)
+                    # loss = criterion(estimation * 63, gt_xyz * 63)
                     # loss = criterion(estimation, gt_xyz) * 1000
                     # loss = criterion(estimation * 100, gt_xyz * 100)
                     # loss = criterion(estimation[:, :63].reshape(-1, 21, 3) * obb_len, gt_xyz.reshape(-1, 21, 3) * obb_len)
+                    loss = criterion(estimation.reshape(-1, 21, 3) * obb_len, gt_xyz.reshape(-1, 21, 3) * obb_len)
 
                 # obb_len = torch.diff(bound_obb, dim=1)
                 # loss = 0.9 * criterion(estimation[:, :63].reshape(-1, 21, 3) * obb_len, gt_xyz.reshape(-1, 21, 3) * obb_len) + \
@@ -295,8 +297,8 @@ for fold, (train_ids, test_ids) in enumerate(kfold.split(dataset)):
                                 0.1 * criterion(estimation[:, 63:].reshape(-1, 8, 3) * 8, obj_xyz.reshape(-1, 8, 3) * 8)
                         else:
                             # eval_loss = criterion(estimation, gt_xyz) * 1000
-                            eval_loss = criterion(estimation * 63, gt_xyz * 63)
-                            # eval_loss = criterion(estimation[:, :63].reshape(-1, 21, 3) * obb_len, gt_xyz.reshape(-1, 21, 3) * obb_len)
+                            # eval_loss = criterion(estimation * 63, gt_xyz * 63)
+                            eval_loss = criterion(estimation.reshape(-1, 21, 3) * obb_len, gt_xyz.reshape(-1, 21, 3) * obb_len)
 
                         # obb_len = torch.diff(bound_obb, dim=1)
                         # eval_loss = 0.9 * criterion(estimation[:, :63].reshape(-1, 21, 3) * obb_len, gt_xyz.reshape(-1, 21, 3) * obb_len) + \

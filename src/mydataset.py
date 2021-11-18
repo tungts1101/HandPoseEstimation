@@ -50,8 +50,8 @@ class DatasetObj(torch.utils.data.Dataset):
             self.subject_names = [subject] if subject != '' else self.subject_names
             self.gesture_names = [action] if action != '' else self.gesture_names
         
-        print("Subjects: {}\nTest subjects: {}\nGestures: {}\n".format(
-            self.subject_names, self.test_subjects, self.gesture_names))
+        # print("Subjects: {}\nTest subjects: {}\nGestures: {}\n".format(
+        #     self.subject_names, self.test_subjects, self.gesture_names))
 
         self.total_frame_num = self.__total_frame_num()
 
