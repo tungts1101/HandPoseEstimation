@@ -47,10 +47,12 @@ class DatasetObj(torch.utils.data.Dataset):
         if not self.is_train:
             self.subject_names = [subject] if subject != '' else self.subject_names
             self.gesture_names = [action] if action != '' else self.gesture_names
-            self.gesture_names = test_gestures
+            if self.is_normal:
+                self.gesture_names = test_gestures
         else:
-            for gesture in test_gestures:
-                self.gesture_names.remove(gesture)
+            if self.is_normal:
+                for gesture in test_gestures:
+                    self.gesture_names.remove(gesture)
         
         print("Subjects: {}\nGestures: {}\n".format(self.subject_names, self.gesture_names))
 
@@ -135,8 +137,6 @@ class DatasetObj(torch.utils.data.Dataset):
                             print(e)
 
     def __load_data_dir(self, seq_folder):
-        print(seq_folder)
-
         point_cloud = np.load(os.path.join(seq_folder, 'points.npy')).astype(np.float32)
         gt_xyz = np.load(os.path.join(seq_folder, 'gt_xyz.npy')).astype(np.float32)
         bound_obb = np.load(os.path.join(seq_folder, 'bound_obb.npy')).astype(np.float32)
