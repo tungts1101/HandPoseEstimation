@@ -19,7 +19,7 @@ gesture_names_small = ['put_salt']
 obj_contained_action = ['close_juice_bottle', 'close_liquid_soap', 'close_milk', 'open_juice_bottle', 'open_liquid_soap', 
 'open_milk', 'pour_juice_bottle', 'pour_liquid_soap', 'pour_milk', 'put_salt']
 # obj_contained_action = ['put_salt']
-test_gestures = ["put_salt"]
+# test_gestures = ["put_salt"]
 test_seq = ['3']
 
 class DatasetObj(torch.utils.data.Dataset):
@@ -46,10 +46,10 @@ class DatasetObj(torch.utils.data.Dataset):
         if not self.is_train:
             self.subject_names = [subject] if subject != '' else self.subject_names
             self.gesture_names = [action] if action != '' else self.gesture_names
-            self.gesture_names = test_gestures
-        else:
-            for gesture in test_gestures:
-                self.gesture_names.remove(gesture)
+        #     self.gesture_names = test_gestures
+        # else:
+        #     for gesture in test_gestures:
+        #         self.gesture_names.remove(gesture)
         
         print("Subjects: {}\nGestures: {}\n".format(self.subject_names, self.gesture_names))
 
