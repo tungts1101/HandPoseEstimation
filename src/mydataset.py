@@ -135,6 +135,8 @@ class DatasetObj(torch.utils.data.Dataset):
                             print(e)
 
     def __load_data_dir(self, seq_folder):
+        print(seq_folder)
+
         point_cloud = np.load(os.path.join(seq_folder, 'points.npy')).astype(np.float32)
         gt_xyz = np.load(os.path.join(seq_folder, 'gt_xyz.npy')).astype(np.float32)
         bound_obb = np.load(os.path.join(seq_folder, 'bound_obb.npy')).astype(np.float32)
