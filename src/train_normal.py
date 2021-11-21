@@ -77,10 +77,10 @@ torch.manual_seed(args.seed)
 random.seed(args.seed)
 
 ### load data
-train_dataset = DatasetObj(is_train=True, is_full=args.is_full, is_obj=True, device=device, dataset_folder=args.dataset_folder)
+train_dataset = DatasetObj(is_train=True, is_full=args.is_full, is_obj=True, device=device, dataset_folder=args.dataset_folder, is_normal=True)
 train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True)
 
-test_dataset = DatasetObj(is_train=False, is_full=args.is_full, is_obj=True, device=device, dataset_folder=args.dataset_folder)
+test_dataset = DatasetObj(is_train=False, is_full=args.is_full, is_obj=True, device=device, dataset_folder=args.dataset_folder, is_normal=True)
 test_dataloader = torch.utils.data.DataLoader(test_dataset, batch_size=args.batch_size, shuffle=True)
 
 if not args.weight:
@@ -179,7 +179,6 @@ for epoch in range(int(cur_state['epoch']), args.epoch + 1):
     logging.info("Time training 1 epoch: {} s".format(time.time() - timer))
     train_mse = train_mse / len(train_dataset)
     logging.info("Train error: {} mm".format(train_mse))
-    logging.info("Epoch: {}, train error: {} mm".format(epoch, train_mse))
     # train_mse_wld = train_mse_wld / len(test_dataset)
     # logging.info("Train error in world space: {} mm".format(train_mse_wld))
 

@@ -236,7 +236,6 @@ for fold, (train_ids, test_ids) in enumerate(kfold.split(dataset)):
         logging.info("Time training 1 epoch: {} s".format(time.time() - timer))
         train_mse = train_mse / len(train_dataset)
         logging.info("Train error: {} mm".format(train_mse))
-        logging.info("Epoch: {}, train error: {} mm".format(epoch, train_mse))
         # train_mse_wld = train_mse_wld / len(test_dataset)
         # logging.info("Train error in world space: {} mm".format(train_mse_wld))
 
