@@ -204,8 +204,8 @@ for fold, (train_ids, test_ids) in enumerate(kfold.split(dataset)):
                     # loss = 0.9 * criterion(estimation[:, :63].reshape(-1, 21, 3) * obb_len, gt_xyz.reshape(-1, 21, 3) * obb_len) + \
                     #     0.1 * criterion(estimation[:, 63:].reshape(-1, 8, 3) * obb_len, obj_xyz.reshape(-1, 8, 3) * obb_len)
 
-                    loss = 0.8 * criterion(estimation[:, :63].reshape(-1, 21, 3) * obb_len, gt_xyz.reshape(-1, 21, 3) * obb_len) + \
-                        0.2 * criterion(estimation[:, 63:].reshape(-1, 8, 3) * obb_len, obj_xyz.reshape(-1, 8, 3) * obb_len)
+                    loss = 0.8 * criterion(estimation[:, :63].reshape(-1, 21, 3) * 100, gt_xyz.reshape(-1, 21, 3) * 100) + \
+                        0.2 * criterion(estimation[:, 63:].reshape(-1, 8, 3) * 100, obj_xyz.reshape(-1, 8, 3) * 100)
                 else:
                     # loss = criterion(estimation * 63, gt_xyz * 63)
                     # loss = criterion(estimation, gt_xyz) * 1000
@@ -293,8 +293,8 @@ for fold, (train_ids, test_ids) in enumerate(kfold.split(dataset)):
                             # eval_loss = 0.9 * criterion(estimation[:, :63].reshape(-1, 21, 3) * obb_len, gt_xyz.reshape(-1, 21, 3) * obb_len) + \
                             #     0.1 * criterion(estimation[:, 63:].reshape(-1, 8, 3) * obb_len, obj_xyz.reshape(-1, 8, 3) * obb_len)
 
-                            eval_loss = 0.8 * criterion(estimation[:, :63].reshape(-1, 21, 3) * obb_len, gt_xyz.reshape(-1, 21, 3) * obb_len) + \
-                                0.2 * criterion(estimation[:, 63:].reshape(-1, 8, 3) * obb_len, obj_xyz.reshape(-1, 8, 3) * obb_len)
+                            eval_loss = 0.8 * criterion(estimation[:, :63].reshape(-1, 21, 3) * 100, gt_xyz.reshape(-1, 21, 3) * 100) + \
+                                0.2 * criterion(estimation[:, 63:].reshape(-1, 8, 3) * 100, obj_xyz.reshape(-1, 8, 3) * 100)
                         else:
                             # eval_loss = criterion(estimation, gt_xyz) * 1000
                             # eval_loss = criterion(estimation * 63, gt_xyz * 63)
