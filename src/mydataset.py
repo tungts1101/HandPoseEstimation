@@ -54,7 +54,7 @@ class DatasetObj(torch.utils.data.Dataset):
                 for gesture in test_gestures:
                     self.gesture_names.remove(gesture)
         
-        print("Subjects: {}\nGestures: {}\n".format(self.subject_names, self.gesture_names))
+        # print("Subjects: {}\nGestures: {}\n".format(self.subject_names, self.gesture_names))
 
         self.total_frame_num = self.__total_frame_num()
 
