@@ -11,12 +11,10 @@ gesture_names_full = ['charge_cell_phone','clean_glasses','close_juice_bottle','
 'give_coin','handshake','high_five','light_candle','open_juice_bottle','open_letter','open_liquid_soap','open_milk','open_peanut_butter','open_soda_can','open_wallet','pour_juice_bottle'
 'pour_liquid_soap','pour_milk','pour_wine','prick','put_salt','put_sugar','put_tea_bag','read_letter','receive_coin', 'scoop_spoon','scratch_sponge','sprinkle','squeeze_paper',
 'squeeze_sponge','stir','take_letter_from_enveloppe','tear_paper','toast_wine','unfold_glasses','use_calculator','use_flash','wash_sponge','write']
-test_subjects_full = ["Subject_2", "Subject_5", "Subject_6"]
 
 subject_names_small = ["Subject_1", "Subject_2"]
 # gesture_names_small = ['put_salt','use_calculator','take_letter_from_enveloppe','open_juice_bottle','open_juice_bottle','open_letter','open_liquid_soap','open_milk','open_peanut_butter','open_soda_can','open_wallet']
 gesture_names_small = ['put_salt']
-test_subjects_small = ["Subject_2"]
 
 obj_contained_action = ['close_juice_bottle', 'close_liquid_soap', 'close_milk', 'open_juice_bottle', 'open_liquid_soap', 
 'open_milk', 'pour_juice_bottle', 'pour_liquid_soap', 'pour_milk', 'put_salt']
@@ -37,13 +35,11 @@ class DatasetObj(torch.utils.data.Dataset):
         if is_full:
             self.subject_names = subject_names_full
             self.gesture_names = gesture_names_full
-            self.test_subjects = test_subjects_full
             if self.is_obj:
                 self.gesture_names = obj_contained_action
         else:
             self.subject_names = subject_names_small
             self.gesture_names = gesture_names_small
-            self.test_subjects = test_subjects_small
             if self.is_obj:
                 self.gesture_names = obj_contained_action
 
@@ -55,8 +51,7 @@ class DatasetObj(torch.utils.data.Dataset):
             for gesture in test_gestures:
                 self.gesture_names.remove(gesture)
         
-        # print("Subjects: {}\nTest subjects: {}\nGestures: {}\n".format(
-        #     self.subject_names, self.test_subjects, self.gesture_names))
+        print("Subjects: {}\nGestures: {}\n".format(self.subject_names, self.gesture_names))
 
         self.total_frame_num = self.__total_frame_num()
 
@@ -100,7 +95,6 @@ class DatasetObj(torch.utils.data.Dataset):
     def __load_data(self):
         if self.is_train:
             for i_subject in self.subject_names:
-                #if i_subject in self.test_subjects: continue
                 for i_gesture in self.gesture_names:
                     gesture_folder = os.path.join('..', self.__dataset_folder, i_subject, i_gesture)
                     if not os.path.exists(gesture_folder): continue
@@ -113,7 +107,6 @@ class DatasetObj(torch.utils.data.Dataset):
                         except Exception as e:
                             print(e)
         else:
-            #for i_subject in self.test_subjects:
             for i_subject in self.subject_names:
                 for i_gesture in self.gesture_names:
                     gesture_folder = os.path.join('..', self.__dataset_folder, i_subject, i_gesture)
@@ -154,7 +147,6 @@ class DatasetObj(torch.utils.data.Dataset):
         total = 0
         if self.is_train:
             for i_subject in self.subject_names:
-                #if i_subject in self.test_subjects: continue
                 for i_gesture in self.gesture_names:
                     try:
                         #gesture_folder = os.path.join(self.root_path, 'Video_files', i_subject, i_gesture)
@@ -177,7 +169,6 @@ class DatasetObj(torch.utils.data.Dataset):
                     #else:
                     #    total += len(glob.glob(os.path.join(self.root_path, 'Video_files', i_subject, i_gesture, '**/*.jpeg'), recursive=True))
         else:
-            #for i_subject in self.test_subjects:
             for i_subject in self.subject_names:
                 for i_gesture in self.gesture_names:
                     try:
