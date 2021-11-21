@@ -110,8 +110,8 @@ dataset = torch.utils.data.ConcatDataset([train_dataset, test_dataset])
 # Define the K-fold Cross Validator
 kfold = KFold(n_splits=k_folds, shuffle=True)
 
+logging.info("Train data: {}, Test data: {}".format(len(train_dataset), len(test_dataset)))
 if not args.weight:
-    # logging.info("Train data: {}, Test data: {}".format(len(train_dataset), len(test_dataset)))
     # logging.info("Train data: {}".format(len(train_dataset)))
     logging.info("Size data: {}".format(len(dataset)))
 
