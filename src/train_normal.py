@@ -166,19 +166,19 @@ for epoch in range(int(cur_state['epoch']), args.epoch + 1):
         ## update error
         train_mse = train_mse + loss.item()
 
-        # obb_len = torch.diff(bound_obb, dim=1)
-        # min_bound = bound_obb[:,:1,:]
-        # es_xyz_wld = torch.bmm(estimation.data[:, :63].reshape(-1, 21, 3) * obb_len + min_bound, volume_rotate)
-        # gt_xyz_wld = torch.bmm(gt_xyz.reshape(-1, 21, 3) * obb_len + min_bound, volume_rotate)
-        # train_mse_wld = train_mse_wld + criterion(es_xyz_wld, gt_xyz_wld)
+        obb_len = torch.diff(bound_obb, dim=1)
+        min_bound = bound_obb[:,:1,:]
+        es_xyz_wld = torch.bmm(estimation.data[:, :63].reshape(-1, 21, 3) * obb_len + min_bound, volume_rotate)
+        gt_xyz_wld = torch.bmm(gt_xyz.reshape(-1, 21, 3) * obb_len + min_bound, volume_rotate)
+        train_mse_wld = train_mse_wld + criterion(es_xyz_wld, gt_xyz_wld)
     
     scheduler.step()
     
     logging.info("Time training 1 epoch: {} s".format(time.time() - timer))
     train_mse = train_mse / len(train_dataset)
     logging.info("Train error: {} mm".format(train_mse))
-    # train_mse_wld = train_mse_wld / len(test_dataset)
-    # logging.info("Train error in world space: {} mm".format(train_mse_wld))
+    train_mse_wld = train_mse_wld / len(test_dataset)
+    logging.info("Train error in world space: {} mm".format(train_mse_wld))
 
     torch.save(network.state_dict(), os.path.join(save_dir, "network_last.pth"))
     torch.save(optimizer.state_dict(), os.path.join(save_dir, "optimizer_last.pth"))
