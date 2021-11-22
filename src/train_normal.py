@@ -154,8 +154,8 @@ for epoch in range(int(cur_state['epoch']), args.epoch + 1):
                 # loss = (0.9 * criterion(estimation[:, :63].reshape(-1, 21, 3), gt_xyz.reshape(-1, 21, 3)) + \
                 #     0.1 * criterion(estimation[:, 63:].reshape(-1, 8, 3), obj_xyz.reshape(-1, 8, 3))) * 1000
             else:
-                loss = criterion(estimation * 100, gt_xyz * 100)
-                # loss = criterion(estimation, gt_xyz) * 1000
+                # loss = criterion(estimation * 100, gt_xyz * 100)
+                loss = criterion(estimation, gt_xyz) * 1000
                 # loss = criterion(estimation.reshape(-1, 21, 3) * obb_len, gt_xyz.reshape(-1, 21, 3) * obb_len)
 
         # compute gradient
@@ -229,8 +229,8 @@ for epoch in range(int(cur_state['epoch']), args.epoch + 1):
                         # eval_loss = (0.9 * criterion(estimation[:, :63].reshape(-1, 21, 3), gt_xyz.reshape(-1, 21, 3)) + \
                         #     0.1 * criterion(estimation[:, 63:].reshape(-1, 8, 3), obj_xyz.reshape(-1, 8, 3))) * 1000
                     else:
-                        # eval_loss = criterion(estimation, gt_xyz) * 1000
-                        eval_loss = criterion(estimation * 100, gt_xyz * 100)
+                        eval_loss = criterion(estimation, gt_xyz) * 1000
+                        # eval_loss = criterion(estimation * 100, gt_xyz * 100)
                         # eval_loss = criterion(estimation.reshape(-1, 21, 3) * obb_len, gt_xyz.reshape(-1, 21, 3) * obb_len)
 
                 ## update error
