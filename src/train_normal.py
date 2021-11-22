@@ -101,7 +101,7 @@ network.to(device)
 if not args.weight:
     logging.info(network)
 
-criterion = torch.nn.MSELoss(size_average=True).to(device)
+criterion = torch.nn.MSELoss(reduction='mean').to(device)
 logging.info("================================================================================\n")
 
 
