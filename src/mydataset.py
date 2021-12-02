@@ -35,9 +35,7 @@ class DatasetObj(torch.utils.data.Dataset):
         self.start_idx = 0
         self.end_idx = 0
         self.is_normal = is_normal
-
-        print(self.is_obj, self.is_normal)
-
+        
         if is_full:
             self.subject_names = subject_names_full
             self.gesture_names = gesture_names_full
