@@ -22,6 +22,9 @@ obj_contained_action = ['close_juice_bottle', 'close_liquid_soap', 'close_milk',
 test_gestures = ["put_salt"]
 test_seq = ['3']
 
+train_subject = ["Subject_2", "Subject_4", "Subject_5", "Subject_6"]
+test_subject  = ["Subject_3"]
+
 class DatasetObj(torch.utils.data.Dataset):
     def __init__(self, is_train=True, is_full=True, device='cpu', is_obj=False, subject='',action='', dataset_folder='processed', is_normal=False):
         #self.root_path = root_path
@@ -53,6 +56,11 @@ class DatasetObj(torch.utils.data.Dataset):
             if self.is_normal:
                 for gesture in test_gestures:
                     self.gesture_names.remove(gesture)
+        
+        if self.is_train:
+            self.subject_names = train_subject
+        else:
+            self.subject_names = test_subject
         
         # print("Subjects: {}\nGestures: {}\n".format(self.subject_names, self.gesture_names))
 
