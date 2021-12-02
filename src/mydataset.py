@@ -22,7 +22,7 @@ obj_contained_action = ['close_juice_bottle', 'close_liquid_soap', 'close_milk',
 test_gestures = ["put_salt"]
 test_seq = ['3']
 
-train_subject = ["Subject_2", "Subject_4", "Subject_5", "Subject_6"]
+train_subject = ["Subject_1", "Subject_2", "Subject_4", "Subject_5", "Subject_6"]
 test_subject  = ["Subject_3"]
 
 class DatasetObj(torch.utils.data.Dataset):
@@ -35,7 +35,7 @@ class DatasetObj(torch.utils.data.Dataset):
         self.start_idx = 0
         self.end_idx = 0
         self.is_normal = is_normal
-        
+
         if is_full:
             self.subject_names = subject_names_full
             self.gesture_names = gesture_names_full
