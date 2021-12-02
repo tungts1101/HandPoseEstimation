@@ -95,7 +95,7 @@ elif args.model == 2:
 elif args.model == 3:
     network = CascadedNetworkObj()
 elif args.model == 4:
-    network = PointUNetObj(args.ball_radius2)
+    network = PointUNetObj(args.ball_radius2, args.contain_obj)
 
 network.to(device)
 if not args.weight:
@@ -125,6 +125,7 @@ for epoch in range(int(cur_state['epoch']), args.epoch + 1):
     logging.info("====================")
     
     ## training
+    network.train()
     timer = time.time()
     train_mse = 0.0
     train_mse_wld = 0.0
@@ -155,7 +156,7 @@ for epoch in range(int(cur_state['epoch']), args.epoch + 1):
                     0.1 * criterion(estimation[:, 63:].reshape(-1, 8, 3), obj_xyz.reshape(-1, 8, 3))) * 1000
             else:
                 # loss = criterion(estimation * 100, gt_xyz * 100)
-                loss = criterion(estimation, gt_xyz) * 1000
+                loss = criterion(estimation, gt_xyz) * 63
                 # loss = criterion(estimation.reshape(-1, 21, 3) * obb_len, gt_xyz.reshape(-1, 21, 3) * obb_len)
 
         # compute gradient
@@ -164,21 +165,21 @@ for epoch in range(int(cur_state['epoch']), args.epoch + 1):
         optimizer.step()
 
         ## update error
-        train_mse = train_mse + loss.item()
+        train_mse = train_mse + loss.data * len(points)
 
-        obb_len = torch.diff(bound_obb, dim=1)
-        min_bound = bound_obb[:,:1,:]
-        es_xyz_wld = torch.bmm(estimation.data[:, :63].reshape(-1, 21, 3) * obb_len + min_bound, volume_rotate)
-        gt_xyz_wld = torch.bmm(gt_xyz.reshape(-1, 21, 3) * obb_len + min_bound, volume_rotate)
-        train_mse_wld = train_mse_wld + criterion(es_xyz_wld, gt_xyz_wld)
+        # obb_len = torch.diff(bound_obb, dim=1)
+        # min_bound = bound_obb[:,:1,:]
+        # es_xyz_wld = torch.bmm(estimation.data[:, :63].reshape(-1, 21, 3) * obb_len + min_bound, volume_rotate)
+        # gt_xyz_wld = torch.bmm(gt_xyz.reshape(-1, 21, 3) * obb_len + min_bound, volume_rotate)
+        # train_mse_wld = train_mse_wld + criterion(es_xyz_wld, gt_xyz_wld)
     
     scheduler.step()
     
     logging.info("Time training 1 epoch: {} s".format(time.time() - timer))
     train_mse = train_mse / len(train_dataset)
     logging.info("Train error: {} mm".format(train_mse))
-    train_mse_wld = train_mse_wld / len(test_dataset)
-    logging.info("Train error in world space: {} mm".format(train_mse_wld))
+    # train_mse_wld = train_mse_wld / len(test_dataset)
+    # logging.info("Train error in world space: {} mm".format(train_mse_wld))
 
     torch.save(network.state_dict(), os.path.join(save_dir, "network_last.pth"))
     torch.save(optimizer.state_dict(), os.path.join(save_dir, "optimizer_last.pth"))
@@ -195,11 +196,12 @@ for epoch in range(int(cur_state['epoch']), args.epoch + 1):
     with open(os.path.join(save_dir, 'resume.json'), "w") as _to:
         json.dump(save_state, _to, indent=4)
 
-    if epoch % 5 == 0:
+    if epoch:
         ## testing
+        network.eval()
         timer = time.time()
         test_mse = 0.0
-        test_mse_wld = 0.0
+        test_wld_err = 0.0
 
         with torch.no_grad():
             for i, data in enumerate(tqdm(test_dataloader, 0)):
@@ -214,37 +216,47 @@ for epoch in range(int(cur_state['epoch']), args.epoch + 1):
                 elif isinstance(network, CascadedNetworkObj):
                     estimation_stage_1, estimation_stage_2, estimation = network(points, train_dataset.pca_mean, train_dataset.pca_coeff)
 
-                eval_loss = None
-                if isinstance(network, CascadedNetworkObj):
-                    eval_loss = 0.25 * criterion(estimation_stage_1, gt_pca) + 0.25 * criterion(estimation_stage_2, gt_pca) + 0.5 * criterion(estimation, gt_pca)
-                else:
-                    obb_len = torch.diff(bound_obb, dim=1)
-                    if args.contain_obj:
-                        # eval_loss = criterion(estimation, torch.cat((gt_xyz, obj_xyz.reshape(-1, 24)), dim=1)) * 1000
-                        # eval_loss = 0.9 * criterion(estimation[:, :63].reshape(-1, 21, 3) * obb_len, gt_xyz.reshape(-1, 21, 3) * obb_len) + \
-                        #     0.1 * criterion(estimation[:, 63:].reshape(-1, 8, 3) * obb_len, obj_xyz.reshape(-1, 8, 3) * obb_len)
+                # eval_loss = None
+                # if isinstance(network, CascadedNetworkObj):
+                #     eval_loss = 0.25 * criterion(estimation_stage_1, gt_pca) + 0.25 * criterion(estimation_stage_2, gt_pca) + 0.5 * criterion(estimation, gt_pca)
+                # else:
+                #     obb_len = torch.diff(bound_obb, dim=1)
+                #     if args.contain_obj:
+                #         # eval_loss = criterion(estimation, torch.cat((gt_xyz, obj_xyz.reshape(-1, 24)), dim=1)) * 1000
+                #         # eval_loss = 0.9 * criterion(estimation[:, :63].reshape(-1, 21, 3) * obb_len, gt_xyz.reshape(-1, 21, 3) * obb_len) + \
+                #         #     0.1 * criterion(estimation[:, 63:].reshape(-1, 8, 3) * obb_len, obj_xyz.reshape(-1, 8, 3) * obb_len)
 
-                        # eval_loss = 0.8 * criterion(estimation[:, :63].reshape(-1, 21, 3) * 100, gt_xyz.reshape(-1, 21, 3) * 100) + \
-                        #     0.2 * criterion(estimation[:, 63:].reshape(-1, 8, 3) * 100, obj_xyz.reshape(-1, 8, 3) * 100)
-                        eval_loss = (0.9 * criterion(estimation[:, :63].reshape(-1, 21, 3), gt_xyz.reshape(-1, 21, 3)) + \
-                            0.1 * criterion(estimation[:, 63:].reshape(-1, 8, 3), obj_xyz.reshape(-1, 8, 3))) * 1000
-                    else:
-                        eval_loss = criterion(estimation, gt_xyz) * 1000
-                        # eval_loss = criterion(estimation * 100, gt_xyz * 100)
-                        # eval_loss = criterion(estimation.reshape(-1, 21, 3) * obb_len, gt_xyz.reshape(-1, 21, 3) * obb_len)
+                #         # eval_loss = 0.8 * criterion(estimation[:, :63].reshape(-1, 21, 3) * 100, gt_xyz.reshape(-1, 21, 3) * 100) + \
+                #         #     0.2 * criterion(estimation[:, 63:].reshape(-1, 8, 3) * 100, obj_xyz.reshape(-1, 8, 3) * 100)
+                #         eval_loss = (0.9 * criterion(estimation[:, :63].reshape(-1, 21, 3), gt_xyz.reshape(-1, 21, 3)) + \
+                #             0.1 * criterion(estimation[:, 63:].reshape(-1, 8, 3), obj_xyz.reshape(-1, 8, 3))) * 1000
+                #     else:
+                #         eval_loss = criterion(estimation, gt_xyz) * 1000
+                #         # eval_loss = criterion(estimation * 100, gt_xyz * 100)
+                #         # eval_loss = criterion(estimation.reshape(-1, 21, 3) * obb_len, gt_xyz.reshape(-1, 21, 3) * obb_len)
 
                 ## update error
-                test_mse = test_mse + eval_loss.item()
+                # test_mse = test_mse + eval_loss.item()
 
-                # obb_len = torch.diff(bound_obb, dim=1)
-                # min_bound = bound_obb[:,:1,:]
+                obb_len = torch.diff(bound_obb, dim=1)
+                min_bound = bound_obb[:,:1,:]
                 # out_xyz_wld = torch.bmm(estimation.data[:, :63].reshape(-1, 21, 3) * obb_len + min_bound, volume_rotate)
                 # gt_xyz_wld = torch.bmm(gt_xyz.reshape(-1, 21, 3) * obb_len + min_bound, volume_rotate)
-                # test_mse_wld = criterion(es_xyz_wld, gt_xyz_wld)
+                out_xyz_wld = estimation.data[:, :63].reshape(-1, 21, 3) * 100
+                gt_xyz_wld = gt_xyz.reshape(-1, 21, 3) * 100
+                diff = torch.pow(out_xyz_wld-gt_xyz_wld, 2).view(-1, 21, 3)
+                # diff = torch.pow(estimation.data[:, :63].reshape(-1, 21, 3)-gt_xyz.reshape(-1, 21, 3), 2).view(-1, 21, 3)
+                diff_sum = torch.sum(diff, 2)
+                diff_sum_sqrt = torch.sqrt(diff_sum)
+                diff_mean = torch.mean(diff_sum_sqrt,1).view(-1,1)
+                test_wld_err = test_wld_err + diff_mean.sum()
+                # diff_mean_wld = torch.mul(diff_mean, obb_len)
+                # test_wld_err = test_wld_err + diff_mean_wld.sum()
+                # test_wld_err = criterion(es_xyz_wld, gt_xyz_wld)
             
         timer = (time.time() - timer) / len(test_dataset)
         logging.info("Time test 1 sample: {} ms".format(timer * 1000))
-        test_mse = test_mse / len(test_dataset)
-        logging.info("Test error: {} mm".format(test_mse))
-        # test_mse_wld = test_mse_wld / len(test_dataset)
-        # logging.info("Test error in world space: {} mm".format(test_mse_wld))
+        # test_mse = test_mse / len(test_dataset)
+        # logging.info("Test error: {} mm".format(test_mse))
+        test_wld_err = test_wld_err / len(test_dataset)
+        logging.info("Test error in world space: {} mm".format(test_wld_err))
