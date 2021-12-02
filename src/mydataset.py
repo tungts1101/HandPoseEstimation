@@ -30,6 +30,7 @@ class DatasetObj(torch.utils.data.Dataset):
         #self.root_path = root_path
         self.is_train = is_train
         self.is_obj = is_obj
+        print(self.is_obj)
         self.__dataset_folder = dataset_folder
 
         self.start_idx = 0
@@ -59,8 +60,10 @@ class DatasetObj(torch.utils.data.Dataset):
         
         if self.is_train:
             self.subject_names = train_subject
+            self.gesture_names = gesture_names_full
         else:
             self.subject_names = test_subject
+            self.gesture_names = gesture_names_full
         
         # print("Subjects: {}\nGestures: {}\n".format(self.subject_names, self.gesture_names))
 
