@@ -30,7 +30,6 @@ class DatasetObj(torch.utils.data.Dataset):
         #self.root_path = root_path
         self.is_train = is_train
         self.is_obj = is_obj
-        print(self.is_obj)
         self.__dataset_folder = dataset_folder
 
         self.start_idx = 0
