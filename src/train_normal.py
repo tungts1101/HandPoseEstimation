@@ -36,8 +36,8 @@ parser.add_argument('--epoch', '-e', type=int, default=50)
 parser.add_argument('--weight', '-w', type=str, help="Weight folder")
 parser.add_argument('--dataset_folder', '-ds', type=str, default="processed")
 parser.add_argument('--contain_obj', '-co', type=bool, default=False)
-parser.add_argument('--is_object', '-io', type=bool, default=False)
-parser.add_argument('--is_normal', '-in', type=bool, default=False)
+parser.add_argument('--is_object', '-io', type=int, default=0)
+parser.add_argument('--is_normal', '-in', type=int, default=0)
 
 parser.add_argument('--device', '-d', type=str, default='cpu')
 args = parser.parse_args()
@@ -79,10 +79,12 @@ torch.manual_seed(args.seed)
 random.seed(args.seed)
 
 ### load data
-train_dataset = DatasetObj(is_train=True, is_full=args.is_full, is_obj=args.is_object, device=device, dataset_folder=args.dataset_folder, is_normal=args.is_normal)
+train_dataset = DatasetObj(is_train=True, is_full=args.is_full, is_obj=(args.is_object is 1), 
+                            device=device, dataset_folder=args.dataset_folder, is_normal=(args.is_normal is 1))
 train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True)
 
-test_dataset = DatasetObj(is_train=False, is_full=args.is_full, is_obj=args.is_object, device=device, dataset_folder=args.dataset_folder, is_normal=args.is_normal)
+test_dataset = DatasetObj(is_train=False, is_full=args.is_full, is_obj=(args.is_object is 1), 
+                            device=device, dataset_folder=args.dataset_folder, is_normal=(args.is_normal is 1))
 test_dataloader = torch.utils.data.DataLoader(test_dataset, batch_size=args.batch_size, shuffle=True)
 
 if not args.weight:
