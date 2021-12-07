@@ -47,22 +47,27 @@ class DatasetObj(torch.utils.data.Dataset):
             if self.is_obj:
                 self.gesture_names = obj_contained_action
 
-        if not self.is_train:
-            self.subject_names = [subject] if subject != '' else self.subject_names
-            self.gesture_names = [action] if action != '' else self.gesture_names
-            if self.is_normal:
-                self.gesture_names = test_gestures
-        else:
-            if self.is_normal:
-                for gesture in test_gestures:
-                    self.gesture_names.remove(gesture)
-        
         if self.is_train:
             self.subject_names = train_subject
-            self.gesture_names = gesture_names_full
         else:
             self.subject_names = test_subject
-            self.gesture_names = gesture_names_full
+
+        # if not self.is_train:
+        #     self.subject_names = [subject] if subject != '' else self.subject_names
+        #     self.gesture_names = [action] if action != '' else self.gesture_names
+        #     if self.is_normal:
+        #         self.gesture_names = test_gestures
+        # else:
+        #     if self.is_normal:
+        #         for gesture in test_gestures:
+        #             self.gesture_names.remove(gesture)
+        
+        # if self.is_train:
+        #     self.subject_names = train_subject
+        #     self.gesture_names = gesture_names_full
+        # else:
+        #     self.subject_names = test_subject
+        #     self.gesture_names = gesture_names_full
         
         print("Subjects: {}\nGestures: {}\n".format(self.subject_names, self.gesture_names))
 
