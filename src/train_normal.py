@@ -156,8 +156,10 @@ for epoch in range(int(cur_state['epoch']), args.epoch + 1):
                 # loss = 0.9 * criterion(estimation[:, :63].reshape(-1, 21, 3) * obb_len, gt_xyz.reshape(-1, 21, 3) * obb_len) + \
                 #     0.1 * criterion(estimation[:, 63:].reshape(-1, 8, 3) * obb_len, obj_xyz.reshape(-1, 8, 3) * obb_len)
 
-                loss = (0.9 * criterion(estimation[:, :63].reshape(-1, 21, 3), gt_xyz.reshape(-1, 21, 3)) + \
-                    0.1 * criterion(estimation[:, 63:].reshape(-1, 8, 3), obj_xyz.reshape(-1, 8, 3))) * 1000
+                # loss = (0.9 * criterion(estimation[:, :63].reshape(-1, 21, 3), gt_xyz.reshape(-1, 21, 3)) + \
+                #     0.1 * criterion(estimation[:, 63:].reshape(-1, 8, 3), obj_xyz.reshape(-1, 8, 3))) * 1000
+
+                loss = criterion(estimation, torch.cat((gt_xyz, obj_xyz.reshape(-1, 24)), dim=1)) * 87
             else:
                 # loss = criterion(estimation * 100, gt_xyz * 100)
                 loss = criterion(estimation, gt_xyz) * 63
