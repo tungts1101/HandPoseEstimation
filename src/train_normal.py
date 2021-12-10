@@ -160,8 +160,8 @@ for epoch in range(int(cur_state['epoch']), args.epoch + 1):
                 #     0.1 * criterion(estimation[:, 63:].reshape(-1, 8, 3), obj_xyz.reshape(-1, 8, 3))) * 1000
 
                 # loss = criterion(estimation, torch.cat((gt_xyz, obj_xyz.reshape(-1, 24)), dim=1)) * 87
-                loss = 0.9 * criterion(estimation[:, :63].reshape(-1, 21, 3), gt_xyz.reshape(-1, 21, 3)) + \
-                    0.1 * criterion(estimation[:, 63:].reshape(-1, 8, 3), obj_xyz.reshape(-1, 8, 3))
+                loss = 0.9 * criterion(estimation[:, :63].reshape(-1, 21, 3) * 63, gt_xyz.reshape(-1, 21, 3) * 63) + \
+                    0.1 * criterion(estimation[:, 63:].reshape(-1, 8, 3) * 8, obj_xyz.reshape(-1, 8, 3) * 8)
 
             else:
                 # loss = criterion(estimation * 100, gt_xyz * 100)
