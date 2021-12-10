@@ -174,7 +174,8 @@ for epoch in range(int(cur_state['epoch']), args.epoch + 1):
         optimizer.step()
 
         ## update error
-        train_mse = train_mse + loss.data * len(points)
+        # train_mse = train_mse + loss.data * len(points)
+        train_mse = train_mse + loss.data
 
         # obb_len = torch.diff(bound_obb, dim=1)
         # min_bound = bound_obb[:,:1,:]
