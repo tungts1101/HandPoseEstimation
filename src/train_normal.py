@@ -230,6 +230,8 @@ for epoch in range(int(cur_state['epoch']), args.epoch + 1):
                     estimation = network(inputs_level1, inputs_level1_center)
                 elif isinstance(network, CascadedNetworkObj):
                     estimation_stage_1, estimation_stage_2, estimation = network(points, train_dataset.pca_mean, train_dataset.pca_coeff)
+                elif isinstance(network, SplitPointNet):
+                    estimation = network(points)
 
                 # eval_loss = None
                 # if isinstance(network, CascadedNetworkObj):
