@@ -16,6 +16,7 @@ from cascaded_pointnet import CascadedNetworkObj
 from mydataset import DatasetObj
 from mynetwork import NetworkObj
 from pointunet import PointUNetObj
+from split_pointnet import SplitPointNet
 import random
 
 import json
@@ -79,12 +80,12 @@ torch.manual_seed(args.seed)
 random.seed(args.seed)
 
 ### load data
-train_dataset = DatasetObj(is_train=True, is_full=args.is_full, is_obj=(args.is_object is 1), 
-                            device=device, dataset_folder=args.dataset_folder, is_normal=(args.is_normal is 1))
+train_dataset = DatasetObj(is_train=True, is_full=args.is_full, is_obj=(args.is_object == 1), 
+                            device=device, dataset_folder=args.dataset_folder, is_normal=(args.is_normal == 1))
 train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True)
 
-test_dataset = DatasetObj(is_train=False, is_full=args.is_full, is_obj=(args.is_object is 1), 
-                            device=device, dataset_folder=args.dataset_folder, is_normal=(args.is_normal is 1))
+test_dataset = DatasetObj(is_train=False, is_full=args.is_full, is_obj=(args.is_object == 1), 
+                            device=device, dataset_folder=args.dataset_folder, is_normal=(args.is_normal == 1))
 test_dataloader = torch.utils.data.DataLoader(test_dataset, batch_size=args.batch_size, shuffle=True)
 
 if not args.weight:
@@ -100,6 +101,8 @@ elif args.model == 3:
     network = CascadedNetworkObj()
 elif args.model == 4:
     network = PointUNetObj(args.ball_radius2, args.contain_obj)
+elif args.model == 5:
+    network = SplitPointNet(args.ball_radius, args.ball_radius2)
 
 network.to(device)
 if not args.weight:
@@ -145,6 +148,8 @@ for epoch in range(int(cur_state['epoch']), args.epoch + 1):
             estimation = network(inputs_level1, inputs_level1_center)
         elif isinstance(network, CascadedNetworkObj):
             estimation_stage_1, estimation_stage_2, estimation = network(points, train_dataset.pca_mean, train_dataset.pca_coeff)
+        elif isinstance(network, SplitPointNet):
+            estimation = network(points)
 
         loss = None
         if isinstance(network, CascadedNetworkObj):
