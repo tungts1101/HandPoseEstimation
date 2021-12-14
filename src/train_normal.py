@@ -86,7 +86,7 @@ train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=args.ba
 
 test_dataset = DatasetObj(is_train=False, is_full=args.is_full, is_obj=(args.is_object == 1), 
                             device=device, dataset_folder=args.dataset_folder, is_normal=(args.is_normal == 1))
-test_dataloader = torch.utils.data.DataLoader(test_dataset, batch_size=args.batch_size, shuffle=True)
+test_dataloader = torch.utils.data.DataLoader(test_dataset, batch_size=args.batch_size, shuffle=False)
 
 if not args.weight:
     logging.info("Train data: {}, Test data: {}".format(len(train_dataset), len(test_dataset)))
