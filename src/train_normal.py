@@ -140,6 +140,11 @@ for epoch in range(int(cur_state['epoch']), args.epoch + 1):
     for i, data in enumerate(tqdm(train_dataloader, 0)):
         points, gt_pca, gt_xyz, volume_rotate, bound_obb, obj_xyz = data
 
+        obb_len = torch.diff(bound_obb, dim=1)
+        points[:, :, :3] = points[:, :, :3] * obb_len
+        gt_xyz = gt_xyz.reshape(-1, 21, 3) * obb_len
+        gt_xyz = gt_xyz.reshape(-1, 63)
+
         estimation = None
         if isinstance(network, NetworkObj):
             estimation = network(points)
@@ -170,8 +175,9 @@ for epoch in range(int(cur_state['epoch']), args.epoch + 1):
 
             else:
                 # loss = criterion(estimation * 100, gt_xyz * 100)
-                loss = criterion(estimation, gt_xyz) * 1000
+                # loss = criterion(estimation, gt_xyz) * 1000
                 # loss = criterion(estimation.reshape(-1, 21, 3) * obb_len, gt_xyz.reshape(-1, 21, 3) * obb_len)
+                loss = criterion(estimation, gt_xyz)
 
         # compute gradient
         optimizer.zero_grad()
@@ -222,6 +228,11 @@ for epoch in range(int(cur_state['epoch']), args.epoch + 1):
             for i, data in enumerate(tqdm(test_dataloader, 0)):
                 points, gt_pca, gt_xyz, volume_rotate, bound_obb, obj_xyz = data
 
+                obb_len = torch.diff(bound_obb, dim=1)
+                points[:, :, :3] = points[:, :, :3] * obb_len
+                gt_xyz = gt_xyz.reshape(-1, 21, 3) * obb_len
+                gt_xyz = gt_xyz.reshape(-1, 63)
+
                 ## compute output
                 if isinstance(network, NetworkObj):
                     estimation = network(points)
@@ -271,7 +282,7 @@ for epoch in range(int(cur_state['epoch']), args.epoch + 1):
                 # test_wld_err = test_wld_err + diff_mean_wld.sum()
                 # test_wld_err = criterion(es_xyz_wld, gt_xyz_wld)
 
-                eval_loss = criterion(estimation, gt_xyz) * 1000
+                eval_loss = criterion(estimation, gt_xyz)
                 test_wld_err = test_wld_err + eval_loss.item()
             
         timer = (time.time() - timer) / len(test_dataset)
