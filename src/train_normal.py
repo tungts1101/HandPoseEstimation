@@ -82,7 +82,7 @@ random.seed(args.seed)
 ### load data
 train_dataset = DatasetObj(is_train=True, is_full=args.is_full, is_obj=(args.is_object == 1), 
                             device=device, dataset_folder=args.dataset_folder, is_normal=(args.is_normal == 1))
-train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True)
+train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=args.batch_size, shuffle=False)
 
 test_dataset = DatasetObj(is_train=False, is_full=args.is_full, is_obj=(args.is_object == 1), 
                             device=device, dataset_folder=args.dataset_folder, is_normal=(args.is_normal == 1))
@@ -141,8 +141,8 @@ for epoch in range(int(cur_state['epoch']), args.epoch + 1):
         points, gt_pca, gt_xyz, volume_rotate, bound_obb, obj_xyz = data
 
         obb_len = torch.diff(bound_obb, dim=1)
-        points[:, :, :3] = points[:, :, :3] * obb_len
-        gt_xyz = gt_xyz.reshape(-1, 21, 3) * obb_len
+        points[:, :, :3] = points[:, :, :3] * obb_len / 50
+        gt_xyz = gt_xyz.reshape(-1, 21, 3) * obb_len / 50
         gt_xyz = gt_xyz.reshape(-1, 63)
 
         estimation = None
@@ -229,8 +229,8 @@ for epoch in range(int(cur_state['epoch']), args.epoch + 1):
                 points, gt_pca, gt_xyz, volume_rotate, bound_obb, obj_xyz = data
 
                 obb_len = torch.diff(bound_obb, dim=1)
-                points[:, :, :3] = points[:, :, :3] * obb_len
-                gt_xyz = gt_xyz.reshape(-1, 21, 3) * obb_len
+                points[:, :, :3] = points[:, :, :3] * obb_len / 50
+                gt_xyz = gt_xyz.reshape(-1, 21, 3) * obb_len / 50
                 gt_xyz = gt_xyz.reshape(-1, 63)
 
                 ## compute output
