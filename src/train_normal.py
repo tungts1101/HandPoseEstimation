@@ -177,7 +177,7 @@ for epoch in range(int(cur_state['epoch']), args.epoch + 1):
                 # loss = criterion(estimation * 100, gt_xyz * 100)
                 # loss = criterion(estimation, gt_xyz) * 1000
                 # loss = criterion(estimation.reshape(-1, 21, 3) * obb_len, gt_xyz.reshape(-1, 21, 3) * obb_len)
-                loss = criterion(estimation, gt_xyz)
+                loss = criterion(estimation, gt_xyz) * 63
 
         # compute gradient
         optimizer.zero_grad()
@@ -270,11 +270,11 @@ for epoch in range(int(cur_state['epoch']), args.epoch + 1):
                 # min_bound = bound_obb[:,:1,:]
                 # out_xyz_wld = torch.bmm(estimation.data[:, :63].reshape(-1, 21, 3) * obb_len + min_bound, volume_rotate)
                 # gt_xyz_wld = torch.bmm(gt_xyz.reshape(-1, 21, 3) * obb_len + min_bound, volume_rotate)
-                # out_xyz_wld = estimation.data[:, :63].reshape(-1, 21, 3) * obb_len
-                # gt_xyz_wld = gt_xyz.reshape(-1, 21, 3) * obb_len
+                out_xyz_wld = estimation.data[:, :63].reshape(-1, 21, 3) * obb_len
+                gt_xyz_wld = gt_xyz.reshape(-1, 21, 3) * obb_len
 
-                out_xyz_wld = estimation.data[:, :63].reshape(-1, 21, 3) * 100
-                gt_xyz_wld = gt_xyz.reshape(-1, 21, 3) * 100
+                # out_xyz_wld = estimation.data[:, :63].reshape(-1, 21, 3) * 100
+                # gt_xyz_wld = gt_xyz.reshape(-1, 21, 3) * 100
 
                 # out_xyz_wld = estimation.data[:, :63].reshape(-1, 21, 3)
                 # gt_xyz_wld = gt_xyz.reshape(-1, 21, 3)
