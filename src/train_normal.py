@@ -82,7 +82,7 @@ random.seed(args.seed)
 ### load data
 train_dataset = DatasetObj(is_train=True, is_full=args.is_full, is_obj=(args.is_object == 1), 
                             device=device, dataset_folder=args.dataset_folder, is_normal=(args.is_normal == 1))
-train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=args.batch_size, shuffle=False)
+train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True)
 
 test_dataset = DatasetObj(is_train=False, is_full=args.is_full, is_obj=(args.is_object == 1), 
                             device=device, dataset_folder=args.dataset_folder, is_normal=(args.is_normal == 1))
@@ -140,10 +140,10 @@ for epoch in range(int(cur_state['epoch']), args.epoch + 1):
     for i, data in enumerate(tqdm(train_dataloader, 0)):
         points, gt_pca, gt_xyz, volume_rotate, bound_obb, obj_xyz = data
 
-        obb_len = torch.diff(bound_obb, dim=1)
-        points[:, :, :3] = points[:, :, :3] * obb_len
-        gt_xyz = gt_xyz.reshape(-1, 21, 3) * obb_len
-        gt_xyz = gt_xyz.reshape(-1, 63)
+        # obb_len = torch.diff(bound_obb, dim=1)
+        # points[:, :, :3] = points[:, :, :3] * obb_len
+        # gt_xyz = gt_xyz.reshape(-1, 21, 3) * obb_len
+        # gt_xyz = gt_xyz.reshape(-1, 63)
 
         estimation = None
         if isinstance(network, NetworkObj):
@@ -228,10 +228,10 @@ for epoch in range(int(cur_state['epoch']), args.epoch + 1):
             for i, data in enumerate(tqdm(test_dataloader, 0)):
                 points, gt_pca, gt_xyz, volume_rotate, bound_obb, obj_xyz = data
 
-                obb_len = torch.diff(bound_obb, dim=1)
-                points[:, :, :3] = points[:, :, :3] * obb_len
-                gt_xyz = gt_xyz.reshape(-1, 21, 3) * obb_len
-                gt_xyz = gt_xyz.reshape(-1, 63)
+                # obb_len = torch.diff(bound_obb, dim=1)
+                # points[:, :, :3] = points[:, :, :3] * obb_len
+                # gt_xyz = gt_xyz.reshape(-1, 21, 3) * obb_len
+                # gt_xyz = gt_xyz.reshape(-1, 63)
 
                 ## compute output
                 if isinstance(network, NetworkObj):
@@ -273,8 +273,11 @@ for epoch in range(int(cur_state['epoch']), args.epoch + 1):
                 # out_xyz_wld = estimation.data[:, :63].reshape(-1, 21, 3) * obb_len
                 # gt_xyz_wld = gt_xyz.reshape(-1, 21, 3) * obb_len
 
-                out_xyz_wld = estimation.data[:, :63].reshape(-1, 21, 3)
-                gt_xyz_wld = gt_xyz.reshape(-1, 21, 3)
+                out_xyz_wld = estimation.data[:, :63].reshape(-1, 21, 3) * 100
+                gt_xyz_wld = gt_xyz.reshape(-1, 21, 3) * 100
+
+                # out_xyz_wld = estimation.data[:, :63].reshape(-1, 21, 3)
+                # gt_xyz_wld = gt_xyz.reshape(-1, 21, 3)
                 
                 diff = torch.pow(out_xyz_wld-gt_xyz_wld, 2).view(-1, 21, 3)
                 diff_sum = torch.sum(diff, 2)
