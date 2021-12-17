@@ -141,7 +141,7 @@ for epoch in range(int(cur_state['epoch']), args.epoch + 1):
         points, gt_pca, gt_xyz, volume_rotate, bound_obb, obj_xyz = data
 
         print(points[0, :5, :3])
-        print(gt_xyz[0, :5, :3])
+        print(gt_xyz[0, :15])
         # obb_len = torch.diff(bound_obb, dim=1)
         # points[:, :, :3] = points[:, :, :3] * obb_len
         # gt_xyz = gt_xyz.reshape(-1, 21, 3) * obb_len
