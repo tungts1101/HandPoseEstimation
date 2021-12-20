@@ -266,12 +266,12 @@ for epoch in range(int(cur_state['epoch']), args.epoch + 1):
                 ## update error
                 # test_mse = test_mse + eval_loss.item()
 
-                obb_len = torch.diff(bound_obb, dim=1) / 2
+                obb_len = torch.diff(bound_obb, dim=1) / 10
                 # min_bound = bound_obb[:,:1,:]
                 # out_xyz_wld = torch.bmm(estimation.data[:, :63].reshape(-1, 21, 3) * obb_len + min_bound, volume_rotate)
                 # gt_xyz_wld = torch.bmm(gt_xyz.reshape(-1, 21, 3) * obb_len + min_bound, volume_rotate)
-                out_xyz_wld = estimation.data[:, :63].reshape(-1, 21, 3)
-                gt_xyz_wld = gt_xyz.reshape(-1, 21, 3)
+                out_xyz_wld = estimation.data[:, :63].reshape(-1, 21, 3) * obb_len
+                gt_xyz_wld = gt_xyz.reshape(-1, 21, 3) * obb_len
 
                 # out_xyz_wld = estimation.data[:, :63].reshape(-1, 21, 3)
                 # gt_xyz_wld = gt_xyz.reshape(-1, 21, 3)
@@ -280,9 +280,9 @@ for epoch in range(int(cur_state['epoch']), args.epoch + 1):
                 diff_sum = torch.sum(diff, 2)
                 diff_sum_sqrt = torch.sqrt(diff_sum)
                 diff_mean = torch.mean(diff_sum_sqrt,1).view(-1,1)
-                # test_wld_err = test_wld_err + diff_mean.sum()
-                diff_mean_wld = torch.mul(diff_mean, obb_len)
-                test_wld_err = test_wld_err + diff_mean_wld.sum()
+                test_wld_err = test_wld_err + diff_mean.sum()
+                # diff_mean_wld = torch.mul(diff_mean, obb_len)
+                # test_wld_err = test_wld_err + diff_mean_wld.sum()
 
                 # eval_loss = criterion(estimation, gt_xyz)
                 # test_wld_err = test_wld_err + eval_loss.item()
