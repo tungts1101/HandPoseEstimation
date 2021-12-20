@@ -267,6 +267,7 @@ for epoch in range(int(cur_state['epoch']), args.epoch + 1):
                 # test_mse = test_mse + eval_loss.item()
 
                 obb_len = torch.diff(bound_obb, dim=1) / 2
+                print(obb_len)
                 # min_bound = bound_obb[:,:1,:]
                 # out_xyz_wld = torch.bmm(estimation.data[:, :63].reshape(-1, 21, 3) * obb_len + min_bound, volume_rotate)
                 # gt_xyz_wld = torch.bmm(gt_xyz.reshape(-1, 21, 3) * obb_len + min_bound, volume_rotate)
