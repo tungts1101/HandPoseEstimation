@@ -30,8 +30,8 @@ parser.add_argument('--seed', type=int, default=11)
 parser.add_argument('--save_dir', type=str, default='train_result', help="Folder to save pt file")
 parser.add_argument('--model', '-m', type=int, default=1)
 
-parser.add_argument('--ball_radius', type=float, default=1.5, help='square of radius for ball query in level 1')
-parser.add_argument('--ball_radius2', type=float, default=4, help='square of radius for ball query in level 2')
+parser.add_argument('--ball_radius', type=float, default=0.015, help='square of radius for ball query in level 1')
+parser.add_argument('--ball_radius2', type=float, default=0.04, help='square of radius for ball query in level 2')
 parser.add_argument('--lr', type=float, default=0.001)
 parser.add_argument('--epoch', '-e', type=int, default=50)
 parser.add_argument('--weight', '-w', type=str, help="Weight folder")
@@ -140,9 +140,9 @@ for epoch in range(int(cur_state['epoch']), args.epoch + 1):
     for i, data in enumerate(tqdm(train_dataloader, 0)):
         points, gt_pca, gt_xyz, volume_rotate, bound_obb, obj_xyz, obb_max = data
 
-        obb_len = torch.diff(bound_obb, dim=1) / obb_max
-        points[:, :, :3] = points[:, :, :3] * obb_len
-        gt_xyz = gt_xyz.reshape(-1, 21, 3) * obb_len
+        obb_len = torch.diff(bound_obb, dim=1)
+        points[:, :, :3] = points[:, :, :3] * obb_len / obb_max
+        gt_xyz = gt_xyz.reshape(-1, 21, 3) * obb_len / obb_max
         gt_xyz = gt_xyz.reshape(-1, 63)
 
         estimation = None
@@ -160,7 +160,7 @@ for epoch in range(int(cur_state['epoch']), args.epoch + 1):
         if isinstance(network, CascadedNetworkObj):
             loss = 0.25 * criterion(estimation_stage_1, gt_pca) + 0.25 * criterion(estimation_stage_2, gt_pca) + 0.5 * criterion(estimation, gt_pca)
         else:
-            # obb_len = torch.diff(bound_obb, dim=1)
+            obb_len = torch.diff(bound_obb, dim=1)
             if args.contain_obj:
                 # loss = criterion(estimation, torch.cat((gt_xyz, obj_xyz.reshape(-1, 24)), dim=1)) * 1000
                 # loss = 0.9 * criterion(estimation[:, :63].reshape(-1, 21, 3) * obb_len, gt_xyz.reshape(-1, 21, 3) * obb_len) + \
