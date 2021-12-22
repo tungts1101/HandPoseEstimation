@@ -140,10 +140,10 @@ for epoch in range(int(cur_state['epoch']), args.epoch + 1):
     for i, data in enumerate(tqdm(train_dataloader, 0)):
         points, gt_pca, gt_xyz, volume_rotate, bound_obb, obj_xyz, obb_max = data
 
-        # obb_len = torch.diff(bound_obb, dim=1)
-        # points[:, :, :3] = points[:, :, :3] * obb_len / obb_max
-        # gt_xyz = gt_xyz.reshape(-1, 21, 3) * obb_len / obb_max
-        # gt_xyz = gt_xyz.reshape(-1, 63)
+        obb_len = torch.diff(bound_obb, dim=1)
+        points[:, :, :3] = points[:, :, :3] * obb_len / obb_max
+        gt_xyz = gt_xyz.reshape(-1, 21, 3) * obb_len / obb_max
+        gt_xyz = gt_xyz.reshape(-1, 63)
 
         estimation = None
         if isinstance(network, NetworkObj):
