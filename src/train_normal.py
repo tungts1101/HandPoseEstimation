@@ -138,12 +138,12 @@ for epoch in range(int(cur_state['epoch']), args.epoch + 1):
     train_mse_wld = 0.0
 
     for i, data in enumerate(tqdm(train_dataloader, 0)):
-        points, gt_pca, gt_xyz, volume_rotate, bound_obb, obj_xyz = data
+        points, gt_pca, gt_xyz, volume_rotate, bound_obb, obj_xyz, obb_max = data
 
-        # obb_len = torch.diff(bound_obb, dim=1)
-        # points[:, :, :3] = points[:, :, :3] * obb_len
-        # gt_xyz = gt_xyz.reshape(-1, 21, 3) * obb_len
-        # gt_xyz = gt_xyz.reshape(-1, 63)
+        obb_len = torch.diff(bound_obb, dim=1)
+        points[:, :, :3] = points[:, :, :3] * obb_len / obb_max
+        gt_xyz = gt_xyz.reshape(-1, 21, 3) * obb_len / obb_max
+        gt_xyz = gt_xyz.reshape(-1, 63)
 
         estimation = None
         if isinstance(network, NetworkObj):
@@ -226,11 +226,11 @@ for epoch in range(int(cur_state['epoch']), args.epoch + 1):
 
         with torch.no_grad():
             for i, data in enumerate(tqdm(test_dataloader, 0)):
-                points, gt_pca, gt_xyz, volume_rotate, bound_obb, obj_xyz = data
+                points, gt_pca, gt_xyz, volume_rotate, bound_obb, obj_xyz, obb_max = data
 
-                # obb_len = torch.diff(bound_obb, dim=1)
-                # points[:, :, :3] = points[:, :, :3] * obb_len
-                # gt_xyz = gt_xyz.reshape(-1, 21, 3) * obb_len
+                obb_len = torch.diff(bound_obb, dim=1)
+                points[:, :, :3] = points[:, :, :3] * obb_len / obb_max
+                # gt_xyz = gt_xyz.reshape(-1, 21, 3) * obb_len / obb_max
                 # gt_xyz = gt_xyz.reshape(-1, 63)
 
                 ## compute output
@@ -266,15 +266,15 @@ for epoch in range(int(cur_state['epoch']), args.epoch + 1):
                 ## update error
                 # test_mse = test_mse + eval_loss.item()
 
-                obb_len = torch.diff(bound_obb, dim=1) / 10
+                # obb_len = torch.diff(bound_obb, dim=1)
                 # min_bound = bound_obb[:,:1,:]
                 # out_xyz_wld = torch.bmm(estimation.data[:, :63].reshape(-1, 21, 3) * obb_len + min_bound, volume_rotate)
                 # gt_xyz_wld = torch.bmm(gt_xyz.reshape(-1, 21, 3) * obb_len + min_bound, volume_rotate)
-                out_xyz_wld = estimation.data[:, :63].reshape(-1, 21, 3) * obb_len
-                gt_xyz_wld = gt_xyz.reshape(-1, 21, 3) * obb_len
+                # out_xyz_wld = estimation.data[:, :63].reshape(-1, 21, 3) * obb_len
+                # gt_xyz_wld = gt_xyz.reshape(-1, 21, 3) * obb_len
 
-                # out_xyz_wld = estimation.data[:, :63].reshape(-1, 21, 3)
-                # gt_xyz_wld = gt_xyz.reshape(-1, 21, 3)
+                out_xyz_wld = estimation.data[:, :63].reshape(-1, 21, 3) * obb_max
+                gt_xyz_wld = gt_xyz.reshape(-1, 21, 3) * obb_len
                 
                 diff = torch.pow(out_xyz_wld-gt_xyz_wld, 2).view(-1, 21, 3)
                 diff_sum = torch.sum(diff, 2)

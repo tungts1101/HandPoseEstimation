@@ -104,8 +104,14 @@ class DatasetObj(torch.utils.data.Dataset):
         self.pca_mean = torch.from_numpy(np.expand_dims(pca_mean, axis=0)).to(device)
         self.pca_coeff = torch.from_numpy(pca_coeff_mat).to(device)
 
+        obb_len = torch.diff(self.bound_obb, dim=1)
+        self.obb_max = torch.max(obb_len, dim=0)
+
     def __getitem__(self, index):
-        return self.point_clouds[index, :, :], self.gt_pca[index, :], self.gt_xyz[index, :], self.volume_rotate[index, :, :], self.bound_obb[index, :, :], self.obj_xyz[index, :, :] 
+        return self.point_clouds[index, :, :], self.gt_pca[index, :], \
+            self.gt_xyz[index, :], self.volume_rotate[index, :, :], \
+            self.bound_obb[index, :, :], self.obj_xyz[index, :, :], \
+            self.obb_max 
 
     def __len__(self):
         return self.point_clouds.size(0)
