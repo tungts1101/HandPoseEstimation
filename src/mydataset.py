@@ -105,7 +105,7 @@ class DatasetObj(torch.utils.data.Dataset):
         self.pca_coeff = torch.from_numpy(pca_coeff_mat).to(device)
 
         obb_len = torch.diff(self.bound_obb, dim=1)
-        self.obb_max = torch.max(obb_len, dim=0)
+        self.obb_max = torch.max(obb_len, dim=0).values.to(device)
 
     def __getitem__(self, index):
         return self.point_clouds[index, :, :], self.gt_pca[index, :], \
