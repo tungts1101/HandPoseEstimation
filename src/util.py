@@ -3,6 +3,7 @@ import os
 import cv2
 from scipy.spatial import KDTree
 from PIL import Image
+import matplotlib.pyplot as plt
 
 def get_skeleton(sample, skel_root):
     skeleton_path = os.path.join(skel_root, sample['subject'],
@@ -69,77 +70,40 @@ def _draw2djoints(image, joints, links, col):
             pt = [int(x) for x in joints[finger_links[idx]]]
             cv2.circle(image, pt, 3, color=col if col is not None else colors[finger_idx], thickness=-1)
 
-def visualize(save_dir, root_path, subject, action, seq, valid_idx, estimated_xyz):
+def visualize(gt, es):
     reorder_idx = np.array([
         0, 1, 6, 7, 8, 2, 9, 10, 11, 3, 12, 13, 14, 4, 15, 16, 17, 5, 18, 19,
         20
     ])
 
-    sample = {
-        "subject": subject,
-        "action_name": action,
-        "seq_idx": seq
-    }
+    links = [(0, 1, 2, 3, 4), (0, 5, 6, 7, 8), (0, 9, 10, 11, 12),
+            (0, 13, 14, 15, 16), (0, 17, 18, 19, 20)]
+    cols = ['m', 'b', 'g', 'y', 'r']
 
-    cam_extr = np.array(
-        [[0.999988496304, -0.00468848412856, 0.000982563360594,
-          25.7], [0.00469115935266, 0.999985218048, -0.00273845880292, 1.22],
-         [-0.000969709653873, 0.00274303671904, 0.99999576807,
-          3.902], [0, 0, 0, 1]])
-    cam_intr = np.array([[1395.749023, 0, 935.732544],
-                         [0, 1395.749268, 540.681030], [0, 0, 1]])
-    
-    def get_skel(skel):
-        # Apply camera extrinsic to hand skeleton
-        skel_hom = np.concatenate([skel, np.ones([skel.shape[0], 1])], 1)
-        skel_camcoords = cam_extr.dot(
-            skel_hom.transpose()).transpose()[:, :3].astype(np.float32)
+    for i in range(gt.shape[0]):
+        i_gt = np.squeeze(gt[i, :].reshape(-1, 21, 3)[:, reorder_idx].cpu())
+        i_es = np.squeeze(es[i, :].reshape(-1, 21, 3)[:, reorder_idx].cpu())
 
-        skel_hom2d = np.array(cam_intr).dot(skel_camcoords.transpose()).transpose()
-        skel_proj = (skel_hom2d / skel_hom2d[:, 2:])[:, :2]
+        fig = plt.figure()
+        ax = fig.add_subplot(projection='3d')
+        xs = i_gt[:, 0]
+        ys = i_gt[:, 1]
+        zs = i_gt[:, 2]
+        ax.scatter(xs, ys, zs, marker='o')
 
-        return skel_proj
+        for link in links:
+            ax.plot([xs[i] for i in link], [ys[i] for i in link], [zs[i] for i in link], color='k')
 
-    skeleton_root = os.path.join(root_path, 'Hand_pose_annotation_v1')
-    gt_skels = get_skeleton(sample, skeleton_root)[:, reorder_idx]
+        xs = i_es[:, 0]
+        ys = i_es[:, 1]
+        zs = i_es[:, 2]
+        ax.scatter(xs, ys, zs, marker='8')
 
-    i_image = 0
-    i_valid = 0
-    folder = os.path.join(root_path, 'Video_files', subject, action, seq, 'color')
-    image_list = []
+        for idx, link in enumerate(links):
+            ax.plot([xs[i] for i in link], [ys[i] for i in link], [zs[i] for i in link], color=cols[idx])
 
-    estimated_xyz = estimated_xyz[:, reorder_idx]
+        ax.set_xlabel('X Label')
+        ax.set_ylabel('Y Label')
+        ax.set_zlabel('Z Label')
 
-    os.makedirs(os.path.join(save_dir, 'out'))
-
-    for i_image, image_file in enumerate(os.listdir(folder)):
-        if not valid_idx[i_image]:
-            continue
-   
-        gt_skel = gt_skels[i_image]
-        es_skel = estimated_xyz[i_valid]
-
-        img = cv2.imread(os.path.join(folder, image_file))
-
-        gt_skel_proj = get_skel(gt_skel)
-        es_skel_proj = get_skel(es_skel)
-
-        img = visualize_joints(gt_skel_proj, es_skel_proj)
-        if len(img) == 0: continue
-        img = cv2.resize(img, (480, 800))
-        image_list.append(Image.fromarray(img))
-
-        print(os.path.join(save_dir, 'out', 'img_{}_{}.jpeg'.format(i_image, i_valid)))
-        cv2.imwrite(os.path.join(save_dir, 'out', 'img_{}_{}.jpeg'.format(i_image, i_valid)), img)
-
-        # winname = "Test"
-        # cv2.namedWindow(winname)        # Create a named window
-        # cv2.moveWindow(winname, 50,50) 
-        # cv2.imshow(winname, img)
-        # cv2.waitKey(0)
-       
-        i_valid += 1
-    
-    # if image_list:
-        # print("Save to gif")
-        # image_list[0].save('out.gif', save_all=True, append_images=image_list[1:])
+        plt.show()
