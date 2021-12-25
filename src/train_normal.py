@@ -278,8 +278,8 @@ for epoch in range(int(cur_state['epoch']), args.epoch + 1):
                 # min_bound = bound_obb[:,:1,:]
                 # out_xyz_wld = torch.bmm(estimation.data[:, :63].reshape(-1, 21, 3) * obb_len + min_bound, volume_rotate)
                 # gt_xyz_wld = torch.bmm(gt_xyz.reshape(-1, 21, 3) * obb_len + min_bound, volume_rotate)
-                out_xyz_wld = estimation.data[:, :63].reshape(-1, 21, 3) * obb_len / 10
-                gt_xyz_wld = gt_xyz.reshape(-1, 21, 3) * obb_len / 10
+                out_xyz_wld = (estimation.data[:, :63].reshape(-1, 21, 3) * obb_len) / 10
+                gt_xyz_wld = (gt_xyz.reshape(-1, 21, 3) * obb_len) / 10
 
                 # out_xyz_wld = estimation.data[:, :63].reshape(-1, 21, 3) * obb_max
                 # gt_xyz_wld = gt_xyz.reshape(-1, 21, 3) * obb_len
