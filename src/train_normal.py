@@ -17,6 +17,8 @@ from mydataset import DatasetObj
 from mynetwork import NetworkObj
 from pointunet import PointUNetObj
 from split_pointnet import SplitPointNet
+
+from wing_loss import WingLoss
 import random
 
 import json
@@ -108,7 +110,8 @@ network.to(device)
 if not args.weight:
     logging.info(network)
 
-criterion = torch.nn.MSELoss().to(device)
+# criterion = torch.nn.MSELoss().to(device)
+criterion = WingLoss(10, 2).to(device)
 logging.info("================================================================================\n")
 
 
@@ -140,10 +143,13 @@ for epoch in range(int(cur_state['epoch']), args.epoch + 1):
     for i, data in enumerate(tqdm(train_dataloader, 0)):
         points, gt_pca, gt_xyz, volume_rotate, bound_obb, obj_xyz, obb_max = data
 
-        obb_len = torch.diff(bound_obb, dim=1)
-        points[:, :, :3] = points[:, :, :3] * obb_len / obb_max
-        gt_xyz = gt_xyz.reshape(-1, 21, 3) * obb_len / obb_max
-        gt_xyz = gt_xyz.reshape(-1, 63)
+        # obb_len = torch.diff(bound_obb, dim=1)
+        # points[:, :, :3] = points[:, :, :3] * obb_len / obb_max
+        # gt_xyz = gt_xyz.reshape(-1, 21, 3) * obb_len / obb_max
+        # gt_xyz = gt_xyz.reshape(-1, 63)
+
+        points[:, :, :3] = points[:, :, :3] * 10
+        gt_xyz = gt_xyz * 10
 
         estimation = None
         if isinstance(network, NetworkObj):
@@ -177,7 +183,7 @@ for epoch in range(int(cur_state['epoch']), args.epoch + 1):
                 # loss = criterion(estimation * 100, gt_xyz * 100)
                 # loss = criterion(estimation, gt_xyz) * 1000
                 # loss = criterion(estimation.reshape(-1, 21, 3) * obb_len, gt_xyz.reshape(-1, 21, 3) * obb_len)
-                loss = criterion(estimation, gt_xyz) * 63
+                loss = criterion(estimation, gt_xyz)
 
         # compute gradient
         optimizer.zero_grad()
@@ -228,10 +234,12 @@ for epoch in range(int(cur_state['epoch']), args.epoch + 1):
             for i, data in enumerate(tqdm(test_dataloader, 0)):
                 points, gt_pca, gt_xyz, volume_rotate, bound_obb, obj_xyz, obb_max = data
 
-                obb_len = torch.diff(bound_obb, dim=1)
-                points[:, :, :3] = points[:, :, :3] * obb_len / obb_max
+                # obb_len = torch.diff(bound_obb, dim=1)
+                # points[:, :, :3] = points[:, :, :3] * obb_len / obb_max
                 # gt_xyz = gt_xyz.reshape(-1, 21, 3) * obb_len / obb_max
                 # gt_xyz = gt_xyz.reshape(-1, 63)
+
+                points[:, :, :3] = points[:, :, :3] * 10
 
                 ## compute output
                 if isinstance(network, NetworkObj):
@@ -270,11 +278,11 @@ for epoch in range(int(cur_state['epoch']), args.epoch + 1):
                 # min_bound = bound_obb[:,:1,:]
                 # out_xyz_wld = torch.bmm(estimation.data[:, :63].reshape(-1, 21, 3) * obb_len + min_bound, volume_rotate)
                 # gt_xyz_wld = torch.bmm(gt_xyz.reshape(-1, 21, 3) * obb_len + min_bound, volume_rotate)
-                # out_xyz_wld = estimation.data[:, :63].reshape(-1, 21, 3) * obb_len
-                # gt_xyz_wld = gt_xyz.reshape(-1, 21, 3) * obb_len
+                out_xyz_wld = estimation.data[:, :63].reshape(-1, 21, 3) * obb_len / 10
+                gt_xyz_wld = gt_xyz.reshape(-1, 21, 3) * obb_len / 10
 
-                out_xyz_wld = estimation.data[:, :63].reshape(-1, 21, 3) * obb_max
-                gt_xyz_wld = gt_xyz.reshape(-1, 21, 3) * obb_len
+                # out_xyz_wld = estimation.data[:, :63].reshape(-1, 21, 3) * obb_max
+                # gt_xyz_wld = gt_xyz.reshape(-1, 21, 3) * obb_len
                 
                 diff = torch.pow(out_xyz_wld-gt_xyz_wld, 2).view(-1, 21, 3)
                 diff_sum = torch.sum(diff, 2)
