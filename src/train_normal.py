@@ -111,7 +111,7 @@ if not args.weight:
     logging.info(network)
 
 # criterion = torch.nn.MSELoss().to(device)
-criterion = WingLoss(10, 2).to(device)
+criterion = WingLoss(1, 0.2).to(device)
 logging.info("================================================================================\n")
 
 
@@ -148,8 +148,8 @@ for epoch in range(int(cur_state['epoch']), args.epoch + 1):
         # gt_xyz = gt_xyz.reshape(-1, 21, 3) * obb_len / obb_max
         # gt_xyz = gt_xyz.reshape(-1, 63)
 
-        points[:, :, :3] = points[:, :, :3] * 10
-        gt_xyz = gt_xyz * 10
+        # points[:, :, :3] = points[:, :, :3] * 10
+        # gt_xyz = gt_xyz * 10
 
         estimation = None
         if isinstance(network, NetworkObj):
@@ -183,7 +183,7 @@ for epoch in range(int(cur_state['epoch']), args.epoch + 1):
                 # loss = criterion(estimation * 100, gt_xyz * 100)
                 # loss = criterion(estimation, gt_xyz) * 1000
                 # loss = criterion(estimation.reshape(-1, 21, 3) * obb_len, gt_xyz.reshape(-1, 21, 3) * obb_len)
-                loss = criterion(estimation, gt_xyz)
+                loss = criterion(estimation, gt_xyz) * 63
 
         # compute gradient
         optimizer.zero_grad()
@@ -239,7 +239,7 @@ for epoch in range(int(cur_state['epoch']), args.epoch + 1):
                 # gt_xyz = gt_xyz.reshape(-1, 21, 3) * obb_len / obb_max
                 # gt_xyz = gt_xyz.reshape(-1, 63)
 
-                points[:, :, :3] = points[:, :, :3] * 10
+                # points[:, :, :3] = points[:, :, :3] * 10
 
                 ## compute output
                 if isinstance(network, NetworkObj):
@@ -275,7 +275,7 @@ for epoch in range(int(cur_state['epoch']), args.epoch + 1):
                 # test_mse = test_mse + eval_loss.item()
 
                 obb_len = torch.diff(bound_obb, dim=1)
-                obb_len = obb_len / 10
+                # obb_len = obb_len / 10
                 # min_bound = bound_obb[:,:1,:]
                 # out_xyz_wld = torch.bmm(estimation.data[:, :63].reshape(-1, 21, 3) * obb_len + min_bound, volume_rotate)
                 # gt_xyz_wld = torch.bmm(gt_xyz.reshape(-1, 21, 3) * obb_len + min_bound, volume_rotate)
