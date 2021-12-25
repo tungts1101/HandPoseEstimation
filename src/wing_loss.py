@@ -14,8 +14,8 @@ class WingLoss(nn.Module):
         diff_abs = diff.abs()
         loss = diff_abs.clone()
         
-        idx_smaller = diff_abs < self.w
-        idx_bigger = diff_abs >= self.w
+        idx_smaller = diff_abs < self.omega
+        idx_bigger = diff_abs >= self.omega
         
         loss[idx_smaller] = self.omega * torch.log(1 + loss[idx_smaller].abs() / self.epsilon)
         loss[idx_bigger] = loss[idx_bigger].abs() - self.C
