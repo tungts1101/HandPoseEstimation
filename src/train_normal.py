@@ -183,7 +183,7 @@ for epoch in range(int(cur_state['epoch']), args.epoch + 1):
                 # loss = criterion(estimation * 100, gt_xyz * 100)
                 # loss = criterion(estimation, gt_xyz) * 1000
                 # loss = criterion(estimation.reshape(-1, 21, 3) * obb_len, gt_xyz.reshape(-1, 21, 3) * obb_len)
-                loss = criterion(estimation, gt_xyz) * 63
+                loss = criterion(estimation, gt_xyz)
 
         # compute gradient
         optimizer.zero_grad()
