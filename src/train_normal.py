@@ -148,8 +148,8 @@ for epoch in range(int(cur_state['epoch']), args.epoch + 1):
         # gt_xyz = gt_xyz.reshape(-1, 21, 3) * obb_len / obb_max
         # gt_xyz = gt_xyz.reshape(-1, 63)
 
-        # points[:, :, :3] = points[:, :, :3] * 10
-        # gt_xyz = gt_xyz * 10
+        points[:, :, :3] = points[:, :, :3] * 10
+        gt_xyz = gt_xyz * 10
 
         estimation = None
         if isinstance(network, NetworkObj):
@@ -239,7 +239,8 @@ for epoch in range(int(cur_state['epoch']), args.epoch + 1):
                 # gt_xyz = gt_xyz.reshape(-1, 21, 3) * obb_len / obb_max
                 # gt_xyz = gt_xyz.reshape(-1, 63)
 
-                # points[:, :, :3] = points[:, :, :3] * 10
+                points[:, :, :3] = points[:, :, :3] * 10
+                gt_xyz = gt_xyz * 10
 
                 ## compute output
                 if isinstance(network, NetworkObj):
@@ -274,8 +275,8 @@ for epoch in range(int(cur_state['epoch']), args.epoch + 1):
                 ## update error
                 # test_mse = test_mse + eval_loss.item()
 
-                obb_len = torch.diff(bound_obb, dim=1) / 2
-                # obb_len = obb_len / 10
+                obb_len = torch.diff(bound_obb, dim=1)
+                obb_len = obb_len / 10
                 # min_bound = bound_obb[:,:1,:]
                 # out_xyz_wld = torch.bmm(estimation.data[:, :63].reshape(-1, 21, 3) * obb_len + min_bound, volume_rotate)
                 # gt_xyz_wld = torch.bmm(gt_xyz.reshape(-1, 21, 3) * obb_len + min_bound, volume_rotate)
