@@ -110,8 +110,8 @@ network.to(device)
 if not args.weight:
     logging.info(network)
 
-criterion = torch.nn.MSELoss().to(device)
-# criterion = WingLoss(1, 0.2).to(device)
+# criterion = torch.nn.MSELoss().to(device)
+criterion = WingLoss(1, 0.2).to(device)
 logging.info("================================================================================\n")
 
 
@@ -274,7 +274,7 @@ for epoch in range(int(cur_state['epoch']), args.epoch + 1):
                 ## update error
                 # test_mse = test_mse + eval_loss.item()
 
-                obb_len = torch.diff(bound_obb, dim=1)
+                obb_len = torch.diff(bound_obb, dim=1) / 2
                 # obb_len = obb_len / 10
                 # min_bound = bound_obb[:,:1,:]
                 # out_xyz_wld = torch.bmm(estimation.data[:, :63].reshape(-1, 21, 3) * obb_len + min_bound, volume_rotate)
