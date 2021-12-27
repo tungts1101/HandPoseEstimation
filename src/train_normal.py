@@ -110,8 +110,8 @@ network.to(device)
 if not args.weight:
     logging.info(network)
 
-criterion = torch.nn.MSELoss().to(device)
-# criterion = WingLoss(1, 0.2).to(device)
+# criterion = torch.nn.MSELoss().to(device)
+criterion = WingLoss(1, 0.2).to(device)
 logging.info("================================================================================\n")
 
 
