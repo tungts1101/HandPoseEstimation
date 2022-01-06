@@ -25,7 +25,7 @@ train_subject = ["Subject_1", "Subject_2", "Subject_4", "Subject_5", "Subject_6"
 test_subject  = ["Subject_3"]
 
 class DatasetObj(torch.utils.data.Dataset):
-    def __init__(self, is_train=True, is_full=True, device='cpu', is_obj=False, subject='',action='', seq="1", dataset_folder='processed'):
+    def __init__(self, is_train=True, is_full=True, device='cpu', is_obj=False, subject=None,action=None, seq=None, dataset_folder='processed'):
         #self.root_path = root_path
         self.is_train = is_train
         self.is_obj = is_obj
