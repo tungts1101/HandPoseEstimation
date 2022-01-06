@@ -112,7 +112,6 @@ class DatasetObj(torch.utils.data.Dataset):
     def __load_data(self):
         for i_subject in self.subject_names:
             for i_gesture in self.gesture_names:
-                if not self.is_train: print(i_gesture)
                 gesture_folder = os.path.join('..', self.__dataset_folder, i_subject, i_gesture)
                 if not os.path.exists(gesture_folder): continue
                 for i_seq in os.listdir(gesture_folder):
@@ -120,7 +119,6 @@ class DatasetObj(torch.utils.data.Dataset):
                         if not i_seq.isnumeric(): continue
                         if self.is_obj and not os.path.exists(os.path.join(gesture_folder, i_seq, 'obj_xyz.npy')): continue
                         if self.seq and i_seq != self.seq: continue
-                        if not self.is_train: print(i_seq)
                         self.__load_data_dir(os.path.join(gesture_folder, i_seq))
                     except Exception as e:
                         print(e)
@@ -161,7 +159,6 @@ class DatasetObj(torch.utils.data.Dataset):
                             if self.seq and i_seq != self.seq: continue
                             seq_valid_path = os.path.join(gesture_folder, i_seq, 'valid.npy')
                             if not os.path.exists(seq_valid_path): continue
-                            if not self.is_train: print("seq: {}".format(i_seq))
                             valid = np.load(seq_valid_path).astype(np.bool)
                             total += valid.shape[0]
                         except Exception as e:
