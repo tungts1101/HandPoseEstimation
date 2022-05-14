@@ -45,13 +45,49 @@ class SplitPointNet(nn.Module):
         self.INPUT_FEATURE_NUM = 6
         self.num_outputs       = [12, 12, 12, 12, 12, 18]
 
+        # self.net1 = nn.ModuleList([
+        #     nn.Sequential(
+        #         nn.Conv2d(self.INPUT_FEATURE_NUM, nstates_plus_1[1], kernel_size=(1, 1)),
+        #         nn.BatchNorm2d(nstates_plus_1[0]),
+        #         nn.ReLU(inplace=True),
+        #         nn.Conv2d(nstates_plus_1[1], nstates_plus_1[2], kernel_size=(1, 1)),
+        #         nn.BatchNorm2d(nstates_plus_1[2]),
+        #         nn.ReLU(inplace=True),
+        #         nn.MaxPool2d((1,self.knn_K),stride=1)
+        #     ) for _ in range(6)
+        # ])
+
+        # self.net2 = nn.ModuleList([
+        #     nn.Sequential(
+        #         nn.Conv2d(3+nstates_plus_1[2], nstates_plus_2[0], kernel_size=(1, 1)),
+        #         nn.BatchNorm2d(nstates_plus_2[0]),
+        #         nn.ReLU(inplace=True),
+        #         nn.Conv2d(nstates_plus_2[0], nstates_plus_2[1], kernel_size=(1, 1)),
+        #         nn.BatchNorm2d(nstates_plus_2[1]),
+        #         nn.ReLU(inplace=True),
+        #         nn.MaxPool2d((1,self.knn_K),stride=1)
+        #     ) for _ in range(6)
+        # ])
+
+        # self.net3 = nn.ModuleList([
+        #     nn.Sequential(
+        #         nn.Conv2d(3+nstates_plus_2[2], nstates_plus_3[0], kernel_size=(1, 1)),
+        #         nn.BatchNorm2d(nstates_plus_3[0]),
+        #         nn.ReLU(inplace=True),
+        #         nn.Conv2d(nstates_plus_3[0], nstates_plus_3[1], kernel_size=(1, 1)),
+        #         nn.BatchNorm2d(nstates_plus_3[1]),
+        #         nn.ReLU(inplace=True),
+        #         nn.Conv2d(nstates_plus_3[1], nstates_plus_3[2], kernel_size=(1, 1)),
+        #         nn.BatchNorm2d(nstates_plus_3[2]),
+        #         nn.ReLU(inplace=True),
+        #         nn.MaxPool2d((self.sample_num_level2[i],1),stride=1),
+        #     ) for i in range(6)
+        # ])
+
         self.net1 = nn.ModuleList([
             nn.Sequential(
-                nn.Conv2d(self.INPUT_FEATURE_NUM, nstates_plus_1[1], kernel_size=(1, 1)),
+                nn.Conv2d(self.INPUT_FEATURE_NUM, nstates_plus_1[0], kernel_size=(1, 1)),
                 nn.BatchNorm2d(nstates_plus_1[0]),
-                nn.ReLU(inplace=True),
-                nn.Conv2d(nstates_plus_1[1], nstates_plus_1[2], kernel_size=(1, 1)),
-                nn.BatchNorm2d(nstates_plus_1[2]),
                 nn.ReLU(inplace=True),
                 nn.MaxPool2d((1,self.knn_K),stride=1)
             ) for _ in range(6)
@@ -59,11 +95,8 @@ class SplitPointNet(nn.Module):
 
         self.net2 = nn.ModuleList([
             nn.Sequential(
-                nn.Conv2d(3+nstates_plus_1[2], nstates_plus_2[0], kernel_size=(1, 1)),
+                nn.Conv2d(3+nstates_plus_1[0], nstates_plus_2[0], kernel_size=(1, 1)),
                 nn.BatchNorm2d(nstates_plus_2[0]),
-                nn.ReLU(inplace=True),
-                nn.Conv2d(nstates_plus_2[0], nstates_plus_2[1], kernel_size=(1, 1)),
-                nn.BatchNorm2d(nstates_plus_2[1]),
                 nn.ReLU(inplace=True),
                 nn.MaxPool2d((1,self.knn_K),stride=1)
             ) for _ in range(6)
@@ -71,13 +104,7 @@ class SplitPointNet(nn.Module):
 
         self.net3 = nn.ModuleList([
             nn.Sequential(
-                nn.Conv2d(3+nstates_plus_2[2], nstates_plus_3[0], kernel_size=(1, 1)),
-                nn.BatchNorm2d(nstates_plus_3[0]),
-                nn.ReLU(inplace=True),
-                nn.Conv2d(nstates_plus_3[0], nstates_plus_3[1], kernel_size=(1, 1)),
-                nn.BatchNorm2d(nstates_plus_3[1]),
-                nn.ReLU(inplace=True),
-                nn.Conv2d(nstates_plus_3[1], nstates_plus_3[2], kernel_size=(1, 1)),
+                nn.Conv2d(3+nstates_plus_2[0], nstates_plus_3[2], kernel_size=(1, 1)),
                 nn.BatchNorm2d(nstates_plus_3[2]),
                 nn.ReLU(inplace=True),
                 nn.MaxPool2d((self.sample_num_level2[i],1),stride=1),
