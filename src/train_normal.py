@@ -41,6 +41,7 @@ parser.add_argument('--dataset_folder', '-ds', type=str, default="processed")
 parser.add_argument('--contain_obj', '-co', type=bool, default=False)
 parser.add_argument('--is_object', '-io', type=int, default=0)
 parser.add_argument('--is_normal', '-in', type=int, default=0)
+parser.add_argument('--case', '-c', type=str)
 
 parser.add_argument('--device', '-d', type=str, default='cpu')
 args = parser.parse_args()
@@ -50,7 +51,7 @@ if args.weight:
 else:
     now = datetime.now()
     now_str = now.strftime("%d-%m-%Y-%H-%M-%S")
-    save_dir = os.path.join(args.save_dir, now_str)
+    save_dir = os.path.join(args.save_dir, now_str + "-case" + args.case)
     os.makedirs(save_dir, exist_ok=True)
 
 for handler in logging.root.handlers[:]:
