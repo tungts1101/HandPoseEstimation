@@ -1,6 +1,6 @@
 [submodule "yolov5"]
 	path = yolov5
-	url = ./yolov5
+	url = https://github.com/tungts1101/yolov5
 [submodule "hand_pose_action"]
 	path = hand_pose_action
-	url = ./hand_pose_action
+	url = https://github.com/guiggh/hand_pose_action
